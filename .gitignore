@@ -1,0 +1,46 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# VS Code local settings
+.vscode/
+
+# Node / React
+node_modules/
+dist/
+build/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Test / coverage
+coverage/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local database / temporary files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
