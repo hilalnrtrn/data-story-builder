@@ -1,0 +1,76 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.status-card {
+  width: 100%;
+  max-width: 620px;
+  padding: 40px;
+  border: 1px solid #d9d9d9;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.description {
+  margin: 12px 0 32px;
+  color: #666666;
+}
+
+.services {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.service-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid #eeeeee;
+  font-size: 16px;
+}
+
+.status {
+  font-weight: 700;
+}
+
+.healthy {
+  color: #177245;
+}
+
+.unhealthy {
+  color: #b42318;
+}
+
+.overall {
+  margin-top: 28px;
+  padding-top: 20px;
+  font-weight: 600;
+}
+
+.message {
+  margin: 24px 0;
+}
+
+.error {
+  color: #b42318;
+}
