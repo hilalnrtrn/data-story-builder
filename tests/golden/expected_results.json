@@ -1,0 +1,386 @@
+{
+  "goldenTruthVersion": "1.0",
+
+  "dataset": {
+    "name": "NovaRetail Sales Performance",
+    "periodStart": "2025-01-01",
+    "periodEnd": "2025-12-31",
+    "frequency": "DAILY",
+    "grain": [
+      "Date",
+      "Region",
+      "Product",
+      "Channel"
+    ]
+  },
+
+  "datasetExpectations": {
+    "expectedColumns": [
+      "Date",
+      "Region",
+      "Category",
+      "Product",
+      "Channel",
+      "Campaign",
+      "Revenue",
+      "Orders",
+      "Customers",
+      "Quantity",
+      "MarketingSpend",
+      "StockLevel",
+      "Discount",
+      "Returns"
+    ],
+    "expectedRegionCount": 5,
+    "expectedProductCount": 12,
+    "expectedCategoryCount": 3,
+    "expectedChannelCount": 2
+  },
+
+  "requiredInsights": [
+    {
+      "id": "GT-INS-001",
+      "type": "CHANGE",
+      "metric": "Revenue",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "expectedDirection": "UP",
+      "expectedPreviousValue": 1000000,
+      "expectedCurrentValue": 1300000,
+      "expectedAbsoluteChange": 300000,
+      "expectedPercentageChange": 30.0,
+      "tolerance": 0.01
+    },
+    {
+      "id": "GT-INS-002",
+      "type": "CHANGE",
+      "metric": "Orders",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "expectedDirection": "DOWN",
+      "expectedPreviousValue": 10000,
+      "expectedCurrentValue": 8500,
+      "expectedAbsoluteChange": -1500,
+      "expectedPercentageChange": -15.0,
+      "tolerance": 0.01
+    },
+    {
+      "id": "GT-INS-003",
+      "type": "CHANGE",
+      "metric": "Customers",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "expectedDirection": "DOWN",
+      "expectedPreviousValue": 8000,
+      "expectedCurrentValue": 7040,
+      "expectedAbsoluteChange": -960,
+      "expectedPercentageChange": -12.0,
+      "tolerance": 0.01
+    },
+    {
+      "id": "GT-INS-004",
+      "type": "CHANGE",
+      "metric": "MarketingSpend",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "expectedDirection": "UP",
+      "expectedPreviousValue": 100000,
+      "expectedCurrentValue": 120000,
+      "expectedAbsoluteChange": 20000,
+      "expectedPercentageChange": 20.0,
+      "tolerance": 0.01
+    }
+  ],
+
+  "expectedDerivedMetrics": [
+    {
+      "id": "GT-DER-001",
+      "metric": "AverageOrderValue",
+      "formula": "Revenue / Orders",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "expectedPreviousValue": 100.0,
+      "expectedCurrentValue": 152.941176,
+      "expectedPercentageChange": 52.941176,
+      "tolerance": 0.05
+    },
+    {
+      "id": "GT-DER-002",
+      "metric": "RevenuePerCustomer",
+      "formula": "Revenue / Customers",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "expectedPreviousValue": 125.0,
+      "expectedCurrentValue": 184.659091,
+      "expectedPercentageChange": 47.727273,
+      "tolerance": 0.05
+    }
+  ],
+
+  "expectedContributions": [
+    {
+      "id": "GT-CON-001",
+      "metric": "Revenue",
+      "dimension": "Region",
+      "segment": "Marmara",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "segmentPreviousValue": 380000,
+      "segmentCurrentValue": 590000,
+      "segmentAbsoluteChange": 210000,
+      "totalAbsoluteChange": 300000,
+      "expectedContributionShare": 0.70,
+      "expectedRole": "PRIMARY_POSITIVE_CONTRIBUTOR",
+      "tolerance": 0.01
+    }
+  ],
+
+  "expectedContrasts": [
+    {
+      "id": "GT-CONTRAST-001",
+      "metric": "Revenue",
+      "dimension": "Region",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "subject": "Marmara",
+      "comparison": "İç Anadolu",
+      "expectedSubjectChangePercent": 55.263158,
+      "expectedComparisonChangePercent": -10.0,
+      "expectedDirection": "OUTPERFORMS",
+      "tolerance": 0.05
+    }
+  ],
+
+  "expectedTrends": [
+    {
+      "id": "GT-TREND-001",
+      "metric": "Revenue",
+      "dimension": "Product",
+      "segment": "Office Chair",
+      "periodStart": "2025-01",
+      "periodEnd": "2025-12",
+      "expectedDirection": "UP",
+      "expectedPersistence": "HIGH",
+      "expectedMonotonicMovement": true,
+      "required": true
+    }
+  ],
+
+  "expectedAnomalies": [
+    {
+      "id": "GT-ANOM-001",
+      "metric": "Revenue",
+      "dimension": "Product",
+      "segment": "Smart Watch",
+      "period": "2025-06",
+      "expectedAnomaly": true,
+      "expectedDirection": "HIGH",
+      "expectedOneOffRisk": "HIGH",
+      "expectedSustainedTrend": false,
+      "required": true
+    }
+  ],
+
+  "expectedRelationships": [
+    {
+      "id": "GT-REL-001",
+      "source": "Marmara Revenue Change",
+      "target": "Total Revenue Change",
+      "expectedType": "CONTRIBUTES_TO"
+    },
+    {
+      "id": "GT-REL-002",
+      "source": "Orders Change",
+      "target": "Revenue Change",
+      "expectedType": "COUNTER_SIGNAL"
+    },
+    {
+      "id": "GT-REL-003",
+      "source": "Customers Change",
+      "target": "Revenue Change",
+      "expectedType": "COUNTER_SIGNAL"
+    },
+    {
+      "id": "GT-REL-004",
+      "source": "MarketingSpend Change",
+      "target": "Revenue Change",
+      "expectedType": "CO_MOVES_WITH"
+    }
+  ],
+
+  "expectedCounterEvidence": [
+    {
+      "id": "GT-COUNTER-001",
+      "primaryInsightRef": "GT-INS-001",
+      "expectedSignals": [
+        {
+          "metric": "Orders",
+          "direction": "DOWN",
+          "expectedChangePercent": -15.0
+        },
+        {
+          "metric": "Customers",
+          "direction": "DOWN",
+          "expectedChangePercent": -12.0
+        }
+      ],
+      "expectedIntegrityStatus": "PASS_WITH_WARNINGS",
+      "requiresQualification": true
+    }
+  ],
+
+  "expectedIntegrityFindings": [
+    {
+      "id": "GT-INT-001",
+      "type": "OUTLIER_DEPENDENCY",
+      "metric": "Revenue",
+      "dimension": "Product",
+      "segment": "Bluetooth Speaker",
+      "expectedOutlierPeriod": "2025-09",
+      "outlierExpected": true,
+      "expectedOutlierDependency": "HIGH",
+      "expectedSustainedTrend": false,
+      "expectedStoryEligibility": "QUALIFY_OR_REJECT_TREND"
+    },
+    {
+      "id": "GT-INT-002",
+      "type": "ONE_OFF_EFFECT",
+      "metric": "Revenue",
+      "dimension": "Product",
+      "segment": "Smart Watch",
+      "eventPeriod": "2025-06",
+      "expectedOneOffRisk": "HIGH",
+      "expectedSustainedTrend": false
+    }
+  ],
+
+  "expectedCausalityChecks": [
+    {
+      "id": "GT-CAUS-001",
+      "sourceMetric": "MarketingSpend",
+      "targetMetric": "Revenue",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "associationExpected": true,
+      "causalityEstablished": false,
+      "expectedStatus": "CAUSALITY_NOT_ESTABLISHED",
+      "allowedConcepts": [
+        "ASSOCIATED_WITH",
+        "COINCIDED_WITH",
+        "MOVED_ALONGSIDE"
+      ],
+      "forbiddenConcepts": [
+        "CAUSED",
+        "LED_TO",
+        "BECAUSE_OF",
+        "RESULTED_IN",
+        "DRIVEN_BY"
+      ]
+    }
+  ],
+
+  "expectedMissingContext": [
+    {
+      "id": "GT-MC-001",
+      "field": "CompetitorPrice",
+      "expectedStatus": "NOT_AVAILABLE",
+      "isDataQualityError": false,
+      "reason": "Competitor pricing may affect interpretation of Revenue movements."
+    },
+    {
+      "id": "GT-MC-002",
+      "field": "UnitPrice",
+      "expectedStatus": "NOT_AVAILABLE",
+      "isDataQualityError": false,
+      "reason": "AverageOrderValue growth does not establish that individual selling prices increased."
+    },
+    {
+      "id": "GT-MC-003",
+      "field": "PricingChange",
+      "expectedStatus": "NOT_AVAILABLE",
+      "isDataQualityError": false,
+      "reason": "Explicit pricing policy changes are unavailable."
+    }
+  ],
+
+  "expectedBusinessRanking": [
+    {
+      "id": "GT-BR-001",
+      "higherPriorityFinding": "ReturnRate worsening in September",
+      "lowerPriorityFinding": "Discount increase in September",
+      "requiredOrdering": true,
+      "reason": "ReturnRate has negative directionality and higher business criticality while Discount is context-dependent."
+    }
+  ],
+
+  "allowedInsights": [
+    {
+      "id": "GT-ALLOW-001",
+      "type": "ANOMALY",
+      "metric": "Revenue",
+      "period": "2025-06",
+      "reason": "June company-level Revenue is intentionally elevated relative to surrounding months."
+    },
+    {
+      "id": "GT-ALLOW-002",
+      "type": "CONTRAST",
+      "metric": "Revenue",
+      "dimension": "Channel",
+      "subject": "Online",
+      "comparison": "Store",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06"
+    },
+    {
+      "id": "GT-ALLOW-003",
+      "type": "CHANGE",
+      "metric": "Revenue",
+      "dimension": "Region",
+      "segment": "Karadeniz",
+      "previousPeriod": "2025-05",
+      "currentPeriod": "2025-06",
+      "expectedDirection": "UP"
+    }
+  ],
+
+  "forbiddenClaims": [
+    {
+      "id": "GT-FORBID-001",
+      "concept": "MARKETING_CAUSED_REVENUE",
+      "reason": "Only observational co-movement is available."
+    },
+    {
+      "id": "GT-FORBID-002",
+      "concept": "PRICE_INCREASE_OCCURRED",
+      "reason": "UnitPrice and PricingChange are not available."
+    },
+    {
+      "id": "GT-FORBID-003",
+      "concept": "SMART_WATCH_SUSTAINED_GROWTH",
+      "reason": "The June spike returns close to the historical range in July."
+    },
+    {
+      "id": "GT-FORBID-004",
+      "concept": "BLUETOOTH_SPEAKER_RELIABLE_GROWTH",
+      "reason": "The apparent movement is dominated by the September outlier."
+    },
+    {
+      "id": "GT-FORBID-005",
+      "concept": "UNIFORMLY_POSITIVE_JUNE_PERFORMANCE",
+      "reason": "Orders and Customers decline while Revenue increases."
+    }
+  ],
+
+  "expectedDataQualityIssues": {
+    "duplicateRows": 10,
+    "regionNormalizationIssues": 12,
+    "productWhitespaceIssues": 5,
+    "invalidProductCategoryMappings": 3,
+    "stockLevelMissingValues": 50,
+    "invalidDiscountValues": 2,
+    "negativeOrderValues": 2,
+    "returnsGreaterThanQuantity": 2,
+    "invalidDateValues": 2,
+    "numericFormatIssues": 4
+  }
+}
