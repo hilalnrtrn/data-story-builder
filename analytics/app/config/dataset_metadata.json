@@ -1,0 +1,222 @@
+{
+  "dataset": {
+    "name": "NovaRetail Sales Performance",
+    "periodStart": "2025-01-01",
+    "periodEnd": "2025-12-31",
+    "frequency": "DAILY",
+    "grain": [
+      "Date",
+      "Region",
+      "Product",
+      "Channel"
+    ]
+  },
+
+  "columns": {
+    "Date": {
+      "role": "TEMPORAL",
+      "dataType": "Date",
+      "nullable": false,
+      "minDate": "2025-01-01",
+      "maxDate": "2025-12-31"
+    },
+
+    "Region": {
+      "role": "DIMENSION",
+      "dataType": "String",
+      "nullable": false,
+      "validValues": [
+        "Marmara",
+        "Ege",
+        "İç Anadolu",
+        "Akdeniz",
+        "Karadeniz"
+      ]
+    },
+
+    "Category": {
+      "role": "DIMENSION",
+      "dataType": "String",
+      "nullable": false,
+      "validValues": [
+        "Electronics",
+        "Home",
+        "Office"
+      ]
+    },
+
+    "Product": {
+      "role": "DIMENSION",
+      "dataType": "String",
+      "nullable": false,
+      "validValues": [
+        "Wireless Headphones",
+        "Smart Watch",
+        "Bluetooth Speaker",
+        "Power Bank",
+        "Coffee Machine",
+        "Air Fryer",
+        "Vacuum Cleaner",
+        "Desk Lamp",
+        "Office Chair",
+        "Mechanical Keyboard",
+        "Monitor Stand",
+        "Webcam"
+      ]
+    },
+
+    "Channel": {
+      "role": "DIMENSION",
+      "dataType": "String",
+      "nullable": false,
+      "validValues": [
+        "Online",
+        "Store"
+      ]
+    },
+
+    "Campaign": {
+      "role": "DIMENSION",
+      "dataType": "String",
+      "nullable": true,
+      "validValues": [
+        "None",
+        "Summer Sale",
+        "Back to School",
+        "Black Friday",
+        "Holiday Campaign"
+      ]
+    },
+
+    "Revenue": {
+      "role": "METRIC",
+      "metricType": "ADDITIVE",
+      "dataType": "Decimal",
+      "unit": "TRY",
+      "aggregation": "SUM",
+      "nullable": false,
+      "negativeAllowed": false,
+      "min": 0,
+      "directionality": "HIGHER_IS_BETTER",
+      "businessPriority": 0.95
+    },
+
+    "Orders": {
+      "role": "METRIC",
+      "metricType": "ADDITIVE",
+      "dataType": "Integer",
+      "unit": "Orders",
+      "aggregation": "SUM",
+      "nullable": false,
+      "negativeAllowed": false,
+      "min": 0,
+      "directionality": "HIGHER_IS_BETTER",
+      "businessPriority": 0.85
+    },
+
+    "Customers": {
+      "role": "METRIC",
+      "metricType": "ADDITIVE_UNDER_DEMO_ASSUMPTION",
+      "dataType": "Integer",
+      "unit": "Customers",
+      "aggregation": "SUM",
+      "nullable": false,
+      "negativeAllowed": false,
+      "min": 0,
+      "directionality": "HIGHER_IS_BETTER",
+      "businessPriority": 0.90
+    },
+
+    "Quantity": {
+      "role": "METRIC",
+      "metricType": "ADDITIVE",
+      "dataType": "Integer",
+      "unit": "Units",
+      "aggregation": "SUM",
+      "nullable": false,
+      "negativeAllowed": false,
+      "min": 0,
+      "directionality": "HIGHER_IS_BETTER",
+      "businessPriority": 0.70
+    },
+
+    "MarketingSpend": {
+      "role": "METRIC",
+      "metricType": "ADDITIVE",
+      "dataType": "Decimal",
+      "unit": "TRY",
+      "aggregation": "SUM",
+      "nullable": false,
+      "negativeAllowed": false,
+      "min": 0,
+      "directionality": "CONTEXT_DEPENDENT",
+      "businessPriority": 0.60
+    },
+
+    "StockLevel": {
+      "role": "METRIC",
+      "metricType": "SNAPSHOT",
+      "dataType": "Integer",
+      "unit": "Units",
+      "aggregation": "LAST_OR_AVG",
+      "nullable": true,
+      "negativeAllowed": false,
+      "min": 0,
+      "directionality": "CONTEXT_DEPENDENT",
+      "businessPriority": 0.65
+    },
+
+    "Discount": {
+      "role": "METRIC",
+      "metricType": "RATIO",
+      "dataType": "Decimal",
+      "unit": "Ratio",
+      "aggregation": "AVG",
+      "nullable": false,
+      "negativeAllowed": false,
+      "min": 0.0,
+      "max": 0.5,
+      "directionality": "CONTEXT_DEPENDENT",
+      "businessPriority": 0.55
+    },
+
+    "Returns": {
+      "role": "METRIC",
+      "metricType": "ADDITIVE",
+      "dataType": "Integer",
+      "unit": "Units",
+      "aggregation": "SUM",
+      "nullable": false,
+      "negativeAllowed": false,
+      "min": 0,
+      "directionality": "LOWER_IS_BETTER",
+      "businessPriority": 0.85
+    }
+  },
+
+  "relationships": {
+    "productCategoryMapping": {
+      "Wireless Headphones": "Electronics",
+      "Smart Watch": "Electronics",
+      "Bluetooth Speaker": "Electronics",
+      "Power Bank": "Electronics",
+      "Coffee Machine": "Home",
+      "Air Fryer": "Home",
+      "Vacuum Cleaner": "Home",
+      "Desk Lamp": "Home",
+      "Office Chair": "Office",
+      "Mechanical Keyboard": "Office",
+      "Monitor Stand": "Office",
+      "Webcam": "Office"
+    }
+  },
+
+  "crossColumnRules": [
+    {
+      "code": "RETURNS_NOT_GREATER_THAN_QUANTITY",
+      "leftColumn": "Returns",
+      "operator": "<=",
+      "rightColumn": "Quantity"
+    }
+  ]
+}

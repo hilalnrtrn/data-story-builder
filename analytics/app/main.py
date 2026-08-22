@@ -6,6 +6,11 @@ from app.services.ingestion import (
     read_dataset,
 )
 from app.services.preparation import prepare_dataset
+from app.services.data_quality import calculate_data_quality
+from app.services.integrity import validate_integrity
+from app.services.profiler import profile_dataset
+from app.services.semantic_roles import detect_semantic_roles
+
 
 
 app = FastAPI(
@@ -38,15 +43,37 @@ async def prepare_uploaded_dataset(
             raw_dataframe
         )
 
+        dataset_profile = profile_dataset(
+            prepared_dataframe
+        )
+
+        semantic_roles = detect_semantic_roles(
+            prepared_dataframe
+        )
+
+        integrity = validate_integrity(
+            prepared_dataframe
+        )
+
+        data_quality = calculate_data_quality(
+            prepared_dataframe,
+            integrity,
+        )
+
+
         prepared_schema = discover_schema(prepared_dataframe)
 
         return {
-            "analysisId": analysis_id,
-            "fileName": file.filename,
-            "fileType": _get_file_type(file.filename or ""),
-            "rawSchema": raw_schema,
-            "preparedSchema": prepared_schema,
-            "preparationReport": preparation_report,
+           "analysisId": analysis_id,
+           "fileName": file.filename,
+           "fileType": _get_file_type(file.filename or ""),
+           "rawSchema": raw_schema,
+           "preparedSchema": prepared_schema,
+           "preparationReport": preparation_report,
+           "datasetProfile": dataset_profile,
+           "semanticRoles": semantic_roles,
+           "integrity": integrity,
+           "dataQuality": data_quality,
         }
 
     except DatasetIngestionError as exc:
