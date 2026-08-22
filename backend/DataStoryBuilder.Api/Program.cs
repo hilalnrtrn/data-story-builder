@@ -117,4 +117,126 @@ app.MapGet("/api/health", async (
 .WithName("GetHealth")
 .WithOpenApi();
 
+app.MapPost("/api/analyses", async (
+    HttpRequest request,
+    IHttpClientFactory httpClientFactory) =>
+{
+    const long maxFileSize = 10 * 1024 * 1024;
+
+    if (!request.HasFormContentType)
+    {
+        return Results.BadRequest(new
+        {
+            error = "A multipart form with a file is required."
+        });
+    }
+
+    var form = await request.ReadFormAsync();
+    var file = form.Files.GetFile("file");
+
+    if (file is null)
+    {
+        return Results.BadRequest(new
+        {
+            error = "A file is required."
+        });
+    }
+
+    if (file.Length == 0)
+    {
+        return Results.BadRequest(new
+        {
+            error = "The uploaded file is empty."
+        });
+    }
+
+    if (file.Length > maxFileSize)
+    {
+        return Results.BadRequest(new
+        {
+            error = "The uploaded file exceeds the 10 MB limit."
+        });
+    }
+
+    var extension =
+        Path.GetExtension(file.FileName).ToLowerInvariant();
+
+    if (extension is not ".csv" and not ".xlsx")
+    {
+        return Results.BadRequest(new
+        {
+            error = "Unsupported file type. Only CSV and XLSX files are supported."
+        });
+    }
+
+    var analysisId = Guid.NewGuid();
+
+    var client =
+        httpClientFactory.CreateClient("AnalyticsService");
+
+    using var multipartContent =
+        new MultipartFormDataContent();
+
+    multipartContent.Add(
+        new StringContent(analysisId.ToString()),
+        "analysis_id");
+
+    await using var fileStream = file.OpenReadStream();
+
+    using var fileContent =
+        new StreamContent(fileStream);
+
+    if (!string.IsNullOrWhiteSpace(file.ContentType))
+    {
+        fileContent.Headers.ContentType =
+            new System.Net.Http.Headers.MediaTypeHeaderValue(
+                file.ContentType);
+    }
+
+    multipartContent.Add(
+        fileContent,
+        "file",
+        file.FileName);
+
+    HttpResponseMessage analyticsResponse;
+
+    try
+    {
+        analyticsResponse = await client.PostAsync(
+            "/datasets/prepare",
+            multipartContent);
+    }
+    catch (HttpRequestException)
+    {
+        return Results.Problem(
+            detail: "Analytics service is unavailable.",
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    var responseBody =
+        await analyticsResponse.Content.ReadAsStringAsync();
+
+    if (!analyticsResponse.IsSuccessStatusCode)
+    {
+        return Results.Content(
+            responseBody,
+            contentType: "application/json",
+            statusCode: (int)analyticsResponse.StatusCode);
+    }
+
+    return Results.Content(
+        responseBody,
+        contentType: "application/json",
+        statusCode: StatusCodes.Status200OK);
+})
+.DisableAntiforgery()
+.Accepts<AnalysisUploadRequest>("multipart/form-data")
+.WithName("CreateAnalysis")
+.WithOpenApi();
+
 app.Run();
+
+public sealed class AnalysisUploadRequest
+{
+    public IFormFile File { get; set; } = default!;
+}
