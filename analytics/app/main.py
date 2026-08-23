@@ -65,6 +65,7 @@ async def prepare_uploaded_dataset(
             prepared_dataframe,
             analysis_id=analysis_id,
             file_name=file.filename or "",
+            data_quality=data_quality,
         )
 
 

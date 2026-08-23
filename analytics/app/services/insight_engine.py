@@ -6,6 +6,14 @@ from app.config.metadata_loader import load_dataset_metadata
 from app.models.insight import Insight
 from app.services.anomaly_detector import detect_anomaly
 from app.services.change_detector import detect_change
+from app.services.contrast_detector import (
+    detect_top_bottom_contrast,
+)
+from app.services.contribution_detector import detect_contributions
+from app.services.scoring import (
+    apply_confidence_score,
+    apply_importance_score,
+)
 from app.services.trend_detector import detect_trend
 
 
@@ -14,12 +22,18 @@ _SUPPORTED_AGGREGATIONS = {
     "AVG",
 }
 
+_CONTRIBUTION_METRIC_TYPES = {
+    "ADDITIVE",
+    "ADDITIVE_UNDER_DEMO_ASSUMPTION",
+}
+
 
 def generate_insights(
     dataframe: pd.DataFrame,
     *,
     analysis_id: str,
     file_name: str,
+    data_quality: dict[str, Any] | None = None,
 ) -> list[Insight]:
     metadata = load_dataset_metadata()
 
@@ -28,15 +42,25 @@ def generate_insights(
     metric_metadata = _get_metric_metadata(
         metadata
     )
-
-    insights.extend(
-        _generate_change_insights(
-            dataframe,
-            analysis_id=analysis_id,
-            file_name=file_name,
-            metric_metadata=metric_metadata,
-        )
+    dimension_metadata = _get_dimension_metadata(
+        metadata
     )
+
+    change_insights = _generate_change_insights(
+        dataframe,
+        analysis_id=analysis_id,
+        file_name=file_name,
+        metric_metadata=metric_metadata,
+    )
+    insights.extend(change_insights)
+
+    company_change_metrics = {
+        insight.metric
+        for insight in change_insights
+        if insight.type == "CHANGE"
+        and insight.dimension is None
+        and insight.segment is None
+    }
 
     insights.extend(
         _generate_product_trends(
@@ -56,6 +80,35 @@ def generate_insights(
         )
     )
 
+    insights.extend(
+        _generate_contribution_insights(
+            dataframe,
+            analysis_id=analysis_id,
+            file_name=file_name,
+            metric_metadata=metric_metadata,
+            dimension_metadata=dimension_metadata,
+            company_change_metrics=company_change_metrics,
+        )
+    )
+
+    insights.extend(
+        _generate_contrast_insights(
+            dataframe,
+            analysis_id=analysis_id,
+            file_name=file_name,
+            metric_metadata=metric_metadata,
+            dimension_metadata=dimension_metadata,
+        )
+    )
+
+    if data_quality is not None:
+        for insight in insights:
+            apply_confidence_score(
+                insight,
+                data_quality=data_quality,
+            )
+            apply_importance_score(insight)
+
     return insights
 
 
@@ -72,6 +125,22 @@ def _get_metric_metadata(
         for column_name, column_metadata
         in columns.items()
         if column_metadata.get("role") == "METRIC"
+    }
+
+
+def _get_dimension_metadata(
+    metadata: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    columns = metadata.get(
+        "columns",
+        {},
+    )
+
+    return {
+        column_name: column_metadata
+        for column_name, column_metadata
+        in columns.items()
+        if column_metadata.get("role") == "DIMENSION"
     }
 
 
@@ -234,6 +303,87 @@ def _generate_product_anomalies(
                 period=period,
                 history_start="2025-01",
                 history_end="2025-12",
+            )
+
+            if insight is not None:
+                insights.append(insight)
+
+    return insights
+
+
+def _generate_contribution_insights(
+    dataframe: pd.DataFrame,
+    *,
+    analysis_id: str,
+    file_name: str,
+    metric_metadata: dict[str, dict[str, Any]],
+    dimension_metadata: dict[str, dict[str, Any]],
+    company_change_metrics: set[str],
+) -> list[Insight]:
+    insights: list[Insight] = []
+
+    for metric, metadata in metric_metadata.items():
+        aggregation = str(
+            metadata.get("aggregation", "")
+        ).upper()
+        metric_type = str(
+            metadata.get("metricType", "")
+        ).upper()
+
+        if aggregation != "SUM":
+            continue
+
+        if metric_type not in _CONTRIBUTION_METRIC_TYPES:
+            continue
+
+        if metric not in company_change_metrics:
+            continue
+
+        for dimension in dimension_metadata:
+            insights.extend(
+                detect_contributions(
+                    dataframe,
+                    analysis_id=analysis_id,
+                    file_name=file_name,
+                    metric=metric,
+                    dimension=dimension,
+                    aggregation=aggregation,
+                    previous_period="2025-05",
+                    current_period="2025-06",
+                )
+            )
+
+    return insights
+
+
+def _generate_contrast_insights(
+    dataframe: pd.DataFrame,
+    *,
+    analysis_id: str,
+    file_name: str,
+    metric_metadata: dict[str, dict[str, Any]],
+    dimension_metadata: dict[str, dict[str, Any]],
+) -> list[Insight]:
+    insights: list[Insight] = []
+
+    for metric, metadata in metric_metadata.items():
+        aggregation = _get_supported_aggregation(
+            metadata
+        )
+
+        if aggregation is None:
+            continue
+
+        for dimension in dimension_metadata:
+            insight = detect_top_bottom_contrast(
+                dataframe,
+                analysis_id=analysis_id,
+                file_name=file_name,
+                metric=metric,
+                dimension=dimension,
+                aggregation=aggregation,
+                previous_period="2025-05",
+                current_period="2025-06",
             )
 
             if insight is not None:

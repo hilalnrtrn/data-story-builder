@@ -8,6 +8,8 @@ class InsightType(str, Enum):
     CHANGE = "CHANGE"
     TREND = "TREND"
     ANOMALY = "ANOMALY"
+    CONTRIBUTION = "CONTRIBUTION"
+    CONTRAST = "CONTRAST"
 
 
 class InsightDirection(str, Enum):
@@ -60,6 +62,17 @@ class Insight(BaseModel):
 
     values: dict[str, Any] = Field(default_factory=dict)
     detection: dict[str, Any] = Field(default_factory=dict)
+
+    confidence: float | None = None
+    confidence_breakdown: dict[str, Any] = Field(
+        default_factory=dict,
+        alias="confidenceBreakdown",
+    )
+    importance: float | None = None
+    importance_breakdown: dict[str, Any] = Field(
+        default_factory=dict,
+        alias="importanceBreakdown",
+    )
 
     evidence: list[Evidence] = Field(default_factory=list)
 

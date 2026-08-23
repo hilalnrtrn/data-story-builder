@@ -17,6 +17,23 @@
     "minimumPeriods": 6,
     "method": "IQR",
     "iqrMultiplier": 2.0
+  },
+
+  "contribution": {
+    "minimumAbsoluteContributionShare": 0.20
+  },
+
+  "contrast": {
+    "minimumPercentagePointGap": 10.0
+  },
+
+  "confidence": {
+    "weights": {
+      "dataQuality": 0.30,
+      "sampleSufficiency": 0.20,
+      "signalStrength": 0.30,
+      "consistency": 0.20
+    }
   }
 
 }
