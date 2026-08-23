@@ -10,6 +10,7 @@ from app.services.data_quality import calculate_data_quality
 from app.services.integrity import validate_integrity
 from app.services.profiler import profile_dataset
 from app.services.semantic_roles import detect_semantic_roles
+from app.services.insight_engine import generate_insights
 
 
 
@@ -60,6 +61,12 @@ async def prepare_uploaded_dataset(
             integrity,
         )
 
+        insights = generate_insights(
+            prepared_dataframe,
+            analysis_id=analysis_id,
+            file_name=file.filename or "",
+        )
+
 
         prepared_schema = discover_schema(prepared_dataframe)
 
@@ -74,6 +81,10 @@ async def prepare_uploaded_dataset(
            "semanticRoles": semantic_roles,
            "integrity": integrity,
            "dataQuality": data_quality,
+           "insights": [
+               insight.model_dump(by_alias=True)
+               for insight in insights
+            ],
         }
 
     except DatasetIngestionError as exc:

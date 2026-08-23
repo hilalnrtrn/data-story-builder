@@ -1,0 +1,22 @@
+{
+  "period": {
+    "defaultGranularity": "MONTH"
+  },
+
+  "change": {
+    "minimumPercentageChange": 5.0
+  },
+
+  "trend": {
+    "minimumPeriods": 6,
+    "highPersistenceThreshold": 0.8,
+    "minimumPersistenceThreshold": 0.75
+  },
+
+  "anomaly": {
+    "minimumPeriods": 6,
+    "method": "IQR",
+    "iqrMultiplier": 2.0
+  }
+
+}
