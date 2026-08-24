@@ -34,6 +34,27 @@
       "signalStrength": 0.30,
       "consistency": 0.20
     }
+  },
+
+  "relationship": {
+    "metricCompatibility": {
+      "COUNTER_SIGNAL": [
+        {
+          "sourceMetric": "Orders",
+          "targetMetric": "Revenue"
+        },
+        {
+          "sourceMetric": "Customers",
+          "targetMetric": "Revenue"
+        }
+      ],
+      "CO_MOVES_WITH": [
+        {
+          "sourceMetric": "MarketingSpend",
+          "targetMetric": "Revenue"
+        }
+      ]
+    }
   }
 
 }
