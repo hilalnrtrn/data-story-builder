@@ -36,6 +36,34 @@
     }
   },
 
+  "businessRelevance": {
+    "weights": {
+      "metricCriticality": 0.50,
+      "directionImpact": 0.30,
+      "relationshipContext": 0.20
+    },
+    "relationshipContext": {
+      "typeWeights": {
+        "COUNTER_SIGNAL": 0.35,
+        "CONTRIBUTES_TO": 0.30,
+        "RELATED_ANOMALY": 0.20,
+        "CO_MOVES_WITH": 0.15
+      }
+    },
+    "priority": {
+      "weights": {
+        "importance": 0.40,
+        "businessRelevance": 0.40,
+        "confidence": 0.20
+      },
+      "thresholds": {
+        "critical": 0.80,
+        "high": 0.60,
+        "medium": 0.40
+      }
+    }
+  },
+
   "relationship": {
     "metricCompatibility": {
       "COUNTER_SIGNAL": [

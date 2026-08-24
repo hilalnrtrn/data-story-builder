@@ -16,6 +16,7 @@ SAMPLE_DATA_PATH = ROOT_DIR / "sample-data" / "sales_demo_clean.csv"
 GOLDEN_TRUTH_PATH = ROOT_DIR / "tests" / "golden" / "expected_results.json"
 ANALYSIS_ID = "DAY7-RELATIONSHIP-PIPELINE-GOLDEN"
 CHANGE_PERIOD = {"previous": "2025-05", "current": "2025-06"}
+DAY8_CHANGE_PERIOD = {"previous": "2025-08", "current": "2025-09"}
 
 
 def _load_golden_truth() -> dict:
@@ -94,7 +95,7 @@ def test_real_pipeline_generates_expected_relationships(pipeline_output) -> None
     relationships = pipeline_output["relationships"]
     canonical = _canonical_insights(insights)
 
-    assert len(insights) == 85
+    assert len(insights) == 87
     assert len(relationships) == 48
     assert Counter(relationship.type for relationship in relationships) == {
         "CONTRIBUTES_TO": 44,
@@ -194,9 +195,9 @@ def test_real_pipeline_builds_canonical_revenue_cluster(pipeline_output) -> None
         for cluster in clusters
         if cluster.anchor_insight_id == canonical["revenue"].id
     )
-    assert len(clusters) == 40
+    assert len(clusters) == 42
     assert sum(bool(cluster.relationship_ids) for cluster in clusters) == 5
-    assert sum(not cluster.relationship_ids for cluster in clusters) == 35
+    assert sum(not cluster.relationship_ids for cluster in clusters) == 37
     assert len(revenue_cluster.member_insight_ids) == 13
     assert canonical_member_ids <= set(revenue_cluster.member_insight_ids)
 
@@ -224,6 +225,44 @@ def test_real_pipeline_builds_canonical_revenue_cluster(pipeline_output) -> None
             == canonical["revenue"].id
         ]
         assert direct_relationships
+
+
+def test_day8_changes_are_unrelated_singleton_clusters(pipeline_output) -> None:
+    insights = pipeline_output["insights"]
+    relationships = pipeline_output["relationships"]
+    clusters = pipeline_output["clusters"]
+
+    day8_changes = {}
+    for metric in ("ReturnRate", "Discount"):
+        matches = [
+            insight
+            for insight in insights
+            if insight.type == "CHANGE"
+            and insight.metric == metric
+            and insight.dimension is None
+            and insight.segment is None
+            and insight.period == DAY8_CHANGE_PERIOD
+        ]
+        assert len(matches) == 1
+        day8_changes[metric] = matches[0]
+
+    day8_insight_ids = {
+        insight.id for insight in day8_changes.values()
+    }
+    assert all(
+        relationship.source_insight_id not in day8_insight_ids
+        and relationship.target_insight_id not in day8_insight_ids
+        for relationship in relationships
+    )
+
+    clusters_by_anchor = {
+        cluster.anchor_insight_id: cluster for cluster in clusters
+    }
+    for insight_id in day8_insight_ids:
+        cluster = clusters_by_anchor[insight_id]
+        assert cluster.anchor_insight_id == insight_id
+        assert cluster.member_insight_ids == []
+        assert cluster.relationship_ids == []
 
 
 def test_real_pipeline_is_deterministic_and_reference_safe(pipeline_output) -> None:

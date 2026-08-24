@@ -59,3 +59,18 @@ def test_returns_cross_column_rule_is_defined():
         "operator": "<=",
         "rightColumn": "Quantity",
     } in rules
+
+
+def test_return_rate_is_exposed_as_a_derived_metric():
+    metadata = load_dataset_metadata()
+
+    assert "derivedMetrics" in metadata
+    assert "ReturnRate" in metadata["derivedMetrics"]
+    assert "ReturnRate" not in metadata["columns"]
+
+    return_rate = metadata["derivedMetrics"]["ReturnRate"]
+    assert return_rate["aggregation"] == "RATIO_OF_SUMS"
+    assert return_rate["numerator"] == "Returns"
+    assert return_rate["denominator"] == "Quantity"
+    assert return_rate["directionality"] == "LOWER_IS_BETTER"
+    assert return_rate["businessPriority"] == 0.90

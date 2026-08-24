@@ -114,6 +114,18 @@
       "expectedCurrentValue": 184.659091,
       "expectedPercentageChange": 47.727273,
       "tolerance": 0.05
+    },
+    {
+      "id": "GT-DER-003",
+      "metric": "ReturnRate",
+      "formula": "Returns / Quantity",
+      "previousPeriod": "2025-08",
+      "currentPeriod": "2025-09",
+      "expectedPreviousValue": 0.02,
+      "expectedCurrentValue": 0.035,
+      "expectedPercentageChange": 75.0,
+      "expectedPercentagePointChange": 1.5,
+      "tolerance": 0.000001
     }
   ],
 

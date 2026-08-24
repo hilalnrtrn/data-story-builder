@@ -194,6 +194,20 @@
     }
   },
 
+  "derivedMetrics": {
+    "ReturnRate": {
+      "role": "METRIC",
+      "metricType": "DERIVED_RATIO",
+      "dataType": "Decimal",
+      "unit": "Ratio",
+      "numerator": "Returns",
+      "denominator": "Quantity",
+      "aggregation": "RATIO_OF_SUMS",
+      "directionality": "LOWER_IS_BETTER",
+      "businessPriority": 0.90
+    }
+  },
+
   "relationships": {
     "productCategoryMapping": {
       "Wireless Headphones": "Electronics",

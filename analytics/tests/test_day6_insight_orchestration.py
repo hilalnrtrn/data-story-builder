@@ -127,6 +127,30 @@ def test_data_quality_applies_both_scores(scored_insights):
     )
 
 
+def test_integrates_scored_return_rate_change(scored_insights):
+    return_rate_insights = [
+        insight
+        for insight in scored_insights
+        if insight.metric == "ReturnRate"
+    ]
+
+    assert len(return_rate_insights) == 1
+    insight = return_rate_insights[0]
+    assert insight.type == "CHANGE"
+    assert insight.period == {
+        "previous": "2025-08",
+        "current": "2025-09",
+    }
+    assert insight.values["previous"] == pytest.approx(0.02)
+    assert insight.values["current"] == pytest.approx(0.035)
+    assert insight.values["percentageChange"] == pytest.approx(75.0)
+    assert insight.values["percentagePointChange"] == pytest.approx(1.5)
+    assert insight.confidence is not None
+    assert insight.importance is not None
+    assert 0.0 <= insight.confidence <= 1.0
+    assert 0.0 <= insight.importance <= 1.0
+
+
 def test_missing_data_quality_leaves_scores_empty(
     unscored_insights,
 ):

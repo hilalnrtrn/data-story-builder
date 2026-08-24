@@ -10,6 +10,7 @@ from app.services.contrast_detector import (
     detect_top_bottom_contrast,
 )
 from app.services.contribution_detector import detect_contributions
+from app.services.derived_metrics import build_return_rate_change_insight
 from app.services.scoring import (
     apply_confidence_score,
     apply_importance_score,
@@ -53,6 +54,27 @@ def generate_insights(
         metric_metadata=metric_metadata,
     )
     insights.extend(change_insights)
+
+    discount_september_insight = (
+        _generate_discount_september_change_insight(
+            dataframe,
+            analysis_id=analysis_id,
+            file_name=file_name,
+            metric_metadata=metric_metadata,
+        )
+    )
+    if discount_september_insight is not None:
+        insights.append(discount_september_insight)
+
+    return_rate_insight = build_return_rate_change_insight(
+        dataframe,
+        analysis_id=analysis_id,
+        file_name=file_name,
+        previous_period="2025-08",
+        current_period="2025-09",
+    )
+    if return_rate_insight is not None:
+        insights.append(return_rate_insight)
 
     company_change_metrics = {
         insight.metric
@@ -191,6 +213,32 @@ def _generate_change_insights(
             insights.append(insight)
 
     return insights
+
+
+def _generate_discount_september_change_insight(
+    dataframe: pd.DataFrame,
+    *,
+    analysis_id: str,
+    file_name: str,
+    metric_metadata: dict[str, dict[str, Any]],
+) -> Insight | None:
+    discount_metadata = metric_metadata.get("Discount")
+    if discount_metadata is None:
+        return None
+
+    aggregation = _get_supported_aggregation(discount_metadata)
+    if aggregation is None:
+        return None
+
+    return detect_change(
+        dataframe,
+        analysis_id=analysis_id,
+        file_name=file_name,
+        metric="Discount",
+        aggregation=aggregation,
+        previous_period="2025-08",
+        current_period="2025-09",
+    )
 
 
 def _generate_product_trends(
