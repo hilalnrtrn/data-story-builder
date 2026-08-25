@@ -19,6 +19,49 @@
     "iqrMultiplier": 2.0
   },
 
+  "insightIntegrity": {
+    "outlierDependency": {
+      "highSlopeReduction": 0.70,
+      "mediumSlopeReduction": 0.40,
+      "lowSlopeReduction": 0.10
+    },
+    "oneOffEffect": {
+      "highReversionRatio": 0.75,
+      "mediumReversionRatio": 0.50,
+      "lowReversionRatio": 0.25
+    },
+    "score": {
+      "weights": {
+        "consistency": 0.30,
+        "contradictionSafety": 0.30,
+        "outlierRobustness": 0.15,
+        "oneOffRobustness": 0.15,
+        "counterEvidence": 0.10
+      },
+      "riskScores": {
+        "NONE": 1.00,
+        "LOW": 0.85,
+        "MEDIUM": 0.60,
+        "HIGH": 0.25
+      },
+      "consistencyScores": {
+        "PASS": 1.00,
+        "WARNING": 0.70,
+        "FAIL": 0.00
+      },
+      "contradictionScores": {
+        "NONE": 1.00,
+        "INSIGHT_CONTRADICTION": 0.40,
+        "DATA_CONTRADICTION": 0.00,
+        "SEMANTIC_CONTRADICTION": 0.00
+      },
+      "counterEvidenceScores": {
+        "ABSENT": 1.00,
+        "PRESENT": 0.85
+      }
+    }
+  },
+
   "contribution": {
     "minimumAbsoluteContributionShare": 0.20
   },
