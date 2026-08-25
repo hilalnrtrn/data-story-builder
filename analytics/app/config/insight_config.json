@@ -126,6 +126,25 @@
         }
       ]
     }
+  },
+
+  "missingContext": {
+    "requirementsByMetric": {
+      "Revenue": [
+        {
+          "field": "CompetitorPrice",
+          "reason": "Competitor pricing may affect interpretation of Revenue movements."
+        },
+        {
+          "field": "UnitPrice",
+          "reason": "AverageOrderValue growth does not establish that individual selling prices increased."
+        },
+        {
+          "field": "PricingChange",
+          "reason": "Explicit pricing policy changes are unavailable."
+        }
+      ]
+    }
   }
 
 }
