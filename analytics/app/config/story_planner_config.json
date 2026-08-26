@@ -1,0 +1,9 @@
+{
+  "primaryContributorDimensionPriority": [
+    "Region",
+    "Channel",
+    "Product",
+    "Category",
+    "Campaign"
+  ]
+}

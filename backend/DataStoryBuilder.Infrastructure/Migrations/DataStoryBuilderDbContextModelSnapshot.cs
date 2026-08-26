@@ -548,6 +548,39 @@ namespace DataStoryBuilder.Infrastructure.Migrations
                     b.ToTable("relationships", (string)null);
                 });
 
+            modelBuilder.Entity("DataStoryBuilder.Domain.Entities.Story", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AnalysisId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("analysis_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("PlannerVersion")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("planner_version");
+
+                    b.Property<string>("StoryPlanJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("story_plan_json");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnalysisId")
+                        .IsUnique();
+
+                    b.ToTable("stories", (string)null);
+                });
+
             modelBuilder.Entity("DataStoryBuilder.Domain.Entities.CausalityEvaluation", b =>
                 {
                     b.HasOne("DataStoryBuilder.Domain.Entities.Relationship", null)
@@ -629,6 +662,15 @@ namespace DataStoryBuilder.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("AnalysisId", "TargetInsightId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DataStoryBuilder.Domain.Entities.Story", b =>
+                {
+                    b.HasOne("DataStoryBuilder.Domain.Entities.Analysis", null)
+                        .WithOne()
+                        .HasForeignKey("DataStoryBuilder.Domain.Entities.Story", "AnalysisId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 #pragma warning restore 612, 618

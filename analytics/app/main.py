@@ -17,6 +17,7 @@ from app.services.profiler import profile_dataset
 from app.services.relationship_engine import generate_relationships
 from app.services.semantic_roles import detect_semantic_roles
 from app.services.insight_engine import generate_insights
+from app.services.story_planner import build_story_plan
 
 
 
@@ -100,6 +101,16 @@ async def prepare_uploaded_dataset(
             relationships,
             metadata,
         )
+        story_plan = build_story_plan(
+            insights,
+            relationships,
+            insight_clusters,
+            business_relevance.ranked_insights,
+            insight_integrity.evaluations,
+            causality.evaluations,
+            missing_context.evaluations,
+            context_summaries.summaries,
+        )
 
 
         prepared_schema = discover_schema(prepared_dataframe)
@@ -159,6 +170,7 @@ async def prepare_uploaded_dataset(
                summary.model_dump(by_alias=True)
                for summary in context_summaries.summaries
             ],
+           "storyPlan": story_plan.model_dump(by_alias=True),
         }
 
     except DatasetIngestionError as exc:

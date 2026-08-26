@@ -22,6 +22,7 @@ builder.Services.AddScoped<RelationshipRankingPersistence>();
 builder.Services.AddScoped<IntegrityContextPersistence>();
 builder.Services.AddScoped<AnalysisHistoryPersistence>();
 builder.Services.AddScoped<AnalysisDetailPersistence>();
+builder.Services.AddScoped<StoryPlanPersistence>();
 
 builder.Services.AddHttpClient("AnalyticsService", client =>
 {
@@ -164,6 +165,7 @@ app.MapPost("/api/analyses", async (
     InsightPersistence insightPersistence,
     RelationshipRankingPersistence relationshipRankingPersistence,
     IntegrityContextPersistence integrityContextPersistence,
+    StoryPlanPersistence storyPlanPersistence,
     DataStoryBuilderDbContext dbContext) =>
 {
     const long maxFileSize = 10 * 1024 * 1024;
@@ -331,6 +333,11 @@ app.MapPost("/api/analyses", async (
                 cancellationToken);
 
             await integrityContextPersistence.PersistAsync(
+                analysisId,
+                responseBody,
+                cancellationToken);
+
+            await storyPlanPersistence.PersistAsync(
                 analysisId,
                 responseBody,
                 cancellationToken);

@@ -19,6 +19,7 @@ public class DataStoryBuilderDbContext(
         Set<CausalityEvaluation>();
     public DbSet<MissingContextEvaluation> MissingContextEvaluations =>
         Set<MissingContextEvaluation>();
+    public DbSet<Story> Stories => Set<Story>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -541,6 +542,37 @@ public class DataStoryBuilderDbContext(
                     item.AnalysisId,
                     item.Id
                 })
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Story>(story =>
+        {
+            story.ToTable("stories");
+            story.HasKey(item => item.Id);
+
+            story.Property(item => item.Id)
+                .HasColumnName("id")
+                .ValueGeneratedNever();
+            story.Property(item => item.AnalysisId)
+                .HasColumnName("analysis_id")
+                .IsRequired();
+            story.Property(item => item.PlannerVersion)
+                .HasColumnName("planner_version")
+                .HasMaxLength(64)
+                .IsRequired();
+            story.Property(item => item.StoryPlanJson)
+                .HasColumnName("story_plan_json")
+                .HasColumnType("jsonb")
+                .IsRequired();
+            story.Property(item => item.CreatedAt)
+                .HasColumnName("created_at")
+                .IsRequired();
+
+            story.HasIndex(item => item.AnalysisId)
+                .IsUnique();
+            story.HasOne<Analysis>()
+                .WithOne()
+                .HasForeignKey<Story>(item => item.AnalysisId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

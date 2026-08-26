@@ -177,6 +177,12 @@ public sealed class AnalysisDetailPersistence(
                 ParseJson(item.ContextSummaryJson)))
             .ToList();
 
+        var story = await dbContext.Stories
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                item => item.AnalysisId == analysisId,
+                cancellationToken);
+
         return new AnalysisDetailResult(
             analysis.Id,
             analysis.FileName,
@@ -200,7 +206,8 @@ public sealed class AnalysisDetailPersistence(
             insightClusters,
             insightIntegrity,
             causalityEvaluations,
-            missingContextEvaluations);
+            missingContextEvaluations,
+            story is null ? null : ParseJson(story.StoryPlanJson));
     }
 
     private static JsonElement ParseJson(string json)
@@ -234,7 +241,8 @@ public sealed record AnalysisDetailResult(
     IReadOnlyList<AnalysisInsightClusterDetail> InsightClusters,
     IReadOnlyList<AnalysisInsightIntegrityDetail> InsightIntegrity,
     IReadOnlyList<AnalysisCausalityDetail> CausalityEvaluations,
-    IReadOnlyList<AnalysisMissingContextDetail> MissingContextEvaluations);
+    IReadOnlyList<AnalysisMissingContextDetail> MissingContextEvaluations,
+    JsonElement? StoryPlan);
 
 public sealed record AnalysisInsightDetail(
     string Id,
