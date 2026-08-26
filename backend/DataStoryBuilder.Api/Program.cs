@@ -1,6 +1,27 @@
+using DataStoryBuilder.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var baseConnectionString =
+    builder.Configuration.GetConnectionString("PostgreSql");
+
+var password =
+    builder.Configuration["ConnectionStrings:PostgreSqlPassword"];
+
+var connectionString =
+    $"{baseConnectionString};Password={password}";
+
+builder.Services.AddDbContext<DataStoryBuilderDbContext>(options =>
+    options.UseNpgsql(connectionString));
+builder.Services.AddScoped<AnalysisLifecyclePersistence>();
+builder.Services.AddScoped<AnalysisProfilePersistence>();
+builder.Services.AddScoped<InsightPersistence>();
+builder.Services.AddScoped<RelationshipRankingPersistence>();
+builder.Services.AddScoped<IntegrityContextPersistence>();
+builder.Services.AddScoped<AnalysisHistoryPersistence>();
+builder.Services.AddScoped<AnalysisDetailPersistence>();
 
 builder.Services.AddHttpClient("AnalyticsService", client =>
 {
@@ -42,20 +63,10 @@ app.UseCors("Frontend");
 app.UseHttpsRedirection();
 
 app.MapGet("/api/health", async (
-    IConfiguration configuration,
     IHttpClientFactory httpClientFactory) =>
 {
     var databaseStatus = "unhealthy";
     var analyticsStatus = "unhealthy";
-
-    var baseConnectionString =
-        configuration.GetConnectionString("PostgreSql");
-
-    var password =
-        configuration["ConnectionStrings:PostgreSqlPassword"];
-
-    var connectionString =
-        $"{baseConnectionString};Password={password}";
 
     try
     {
@@ -117,9 +128,43 @@ app.MapGet("/api/health", async (
 .WithName("GetHealth")
 .WithOpenApi();
 
+app.MapGet("/api/analyses", async (
+    AnalysisHistoryPersistence analysisHistoryPersistence,
+    CancellationToken cancellationToken) =>
+{
+    var analyses = await analysisHistoryPersistence.GetAsync(
+        cancellationToken);
+
+    return Results.Ok(analyses);
+})
+.WithName("GetAnalyses")
+.WithOpenApi();
+
+app.MapGet("/api/analyses/{id:guid}", async (
+    Guid id,
+    AnalysisDetailPersistence analysisDetailPersistence,
+    CancellationToken cancellationToken) =>
+{
+    var analysis = await analysisDetailPersistence.GetAsync(
+        id,
+        cancellationToken);
+
+    return analysis is null
+        ? Results.NotFound()
+        : Results.Ok(analysis);
+})
+.WithName("GetAnalysis")
+.WithOpenApi();
+
 app.MapPost("/api/analyses", async (
     HttpRequest request,
-    IHttpClientFactory httpClientFactory) =>
+    IHttpClientFactory httpClientFactory,
+    AnalysisLifecyclePersistence analysisLifecyclePersistence,
+    AnalysisProfilePersistence analysisProfilePersistence,
+    InsightPersistence insightPersistence,
+    RelationshipRankingPersistence relationshipRankingPersistence,
+    IntegrityContextPersistence integrityContextPersistence,
+    DataStoryBuilderDbContext dbContext) =>
 {
     const long maxFileSize = 10 * 1024 * 1024;
 
@@ -170,64 +215,169 @@ app.MapPost("/api/analyses", async (
     }
 
     var analysisId = Guid.NewGuid();
-
-    var client =
-        httpClientFactory.CreateClient("AnalyticsService");
-
-    using var multipartContent =
-        new MultipartFormDataContent();
-
-    multipartContent.Add(
-        new StringContent(analysisId.ToString()),
-        "analysis_id");
-
-    await using var fileStream = file.OpenReadStream();
-
-    using var fileContent =
-        new StreamContent(fileStream);
-
-    if (!string.IsNullOrWhiteSpace(file.ContentType))
-    {
-        fileContent.Headers.ContentType =
-            new System.Net.Http.Headers.MediaTypeHeaderValue(
-                file.ContentType);
-    }
-
-    multipartContent.Add(
-        fileContent,
-        "file",
-        file.FileName);
-
-    HttpResponseMessage analyticsResponse;
+    var cancellationToken = request.HttpContext.RequestAborted;
 
     try
     {
-        analyticsResponse = await client.PostAsync(
-            "/datasets/prepare",
-            multipartContent);
+        await analysisLifecyclePersistence.CreateProcessingAsync(
+            analysisId,
+            file.FileName,
+            extension.TrimStart('.'),
+            cancellationToken);
     }
-    catch (HttpRequestException)
+    catch
     {
         return Results.Problem(
-            detail: "Analytics service is unavailable.",
-            statusCode: StatusCodes.Status503ServiceUnavailable);
+            detail: "The analysis lifecycle could not be created.",
+            statusCode: StatusCodes.Status500InternalServerError);
     }
 
-    var responseBody =
-        await analyticsResponse.Content.ReadAsStringAsync();
-
-    if (!analyticsResponse.IsSuccessStatusCode)
+    try
     {
+        var client =
+            httpClientFactory.CreateClient("AnalyticsService");
+
+        using var multipartContent =
+            new MultipartFormDataContent();
+
+        multipartContent.Add(
+            new StringContent(analysisId.ToString()),
+            "analysis_id");
+
+        await using var fileStream = file.OpenReadStream();
+
+        using var fileContent =
+            new StreamContent(fileStream);
+
+        if (!string.IsNullOrWhiteSpace(file.ContentType))
+        {
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(
+                    file.ContentType);
+        }
+
+        multipartContent.Add(
+            fileContent,
+            "file",
+            file.FileName);
+
+        HttpResponseMessage analyticsResponse;
+
+        try
+        {
+            analyticsResponse = await client.PostAsync(
+                "/datasets/prepare",
+                multipartContent);
+        }
+        catch (HttpRequestException)
+        {
+            try
+            {
+                await analysisLifecyclePersistence.MarkFailedAsync(
+                    analysisId,
+                    "Analytics service was unavailable.",
+                    cancellationToken);
+            }
+            catch
+            {
+            }
+
+            return Results.Problem(
+                detail: "Analytics service is unavailable.",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
+
+        var responseBody =
+            await analyticsResponse.Content.ReadAsStringAsync();
+
+        if (!analyticsResponse.IsSuccessStatusCode)
+        {
+            try
+            {
+                await analysisLifecyclePersistence.MarkFailedAsync(
+                    analysisId,
+                    $"Analytics service returned HTTP {(int)analyticsResponse.StatusCode}.",
+                    cancellationToken);
+            }
+            catch
+            {
+            }
+
+            return Results.Content(
+                responseBody,
+                contentType: "application/json",
+                statusCode: (int)analyticsResponse.StatusCode);
+        }
+
+        await using var resultTransaction =
+            await dbContext.Database.BeginTransactionAsync(
+                cancellationToken);
+
+        try
+        {
+            await analysisProfilePersistence.PersistAsync(
+                analysisId,
+                responseBody,
+                cancellationToken);
+
+            await insightPersistence.PersistAsync(
+                analysisId,
+                responseBody,
+                cancellationToken);
+
+            await relationshipRankingPersistence.PersistAsync(
+                analysisId,
+                responseBody,
+                cancellationToken);
+
+            await integrityContextPersistence.PersistAsync(
+                analysisId,
+                responseBody,
+                cancellationToken);
+
+            await analysisLifecyclePersistence.MarkCompletedAsync(
+                analysisId,
+                cancellationToken);
+
+            await resultTransaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            try
+            {
+                await resultTransaction.RollbackAsync(
+                    CancellationToken.None);
+            }
+            catch
+            {
+            }
+
+            dbContext.ChangeTracker.Clear();
+            throw;
+        }
+
         return Results.Content(
             responseBody,
             contentType: "application/json",
-            statusCode: (int)analyticsResponse.StatusCode);
+            statusCode: StatusCodes.Status200OK);
     }
+    catch
+    {
+        try
+        {
+            await analysisLifecyclePersistence.MarkFailedAsync(
+                analysisId,
+                "Unexpected failure while processing the analysis.",
+                cancellationToken);
+        }
+        catch
+        {
+        }
 
-    return Results.Content(
-        responseBody,
-        contentType: "application/json",
-        statusCode: StatusCodes.Status200OK);
+        return Results.Problem(
+            detail: "The analysis could not be completed.",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
 })
 .DisableAntiforgery()
 .Accepts<AnalysisUploadRequest>("multipart/form-data")

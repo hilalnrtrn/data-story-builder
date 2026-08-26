@@ -1,14 +1,20 @@
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
+from app.config.metadata_loader import load_dataset_metadata
 from app.services.ingestion import (
     DatasetIngestionError,
     discover_schema,
     read_dataset,
 )
+from app.services.business_relevance import analyze_business_relevance
+from app.services.day10_analysis import analyze_causality_and_context
+from app.services.insight_clustering import build_insight_clusters
+from app.services.insight_integrity import analyze_insight_integrity
 from app.services.preparation import prepare_dataset
 from app.services.data_quality import calculate_data_quality
 from app.services.integrity import validate_integrity
 from app.services.profiler import profile_dataset
+from app.services.relationship_engine import generate_relationships
 from app.services.semantic_roles import detect_semantic_roles
 from app.services.insight_engine import generate_insights
 
@@ -68,6 +74,33 @@ async def prepare_uploaded_dataset(
             data_quality=data_quality,
         )
 
+        relationships = generate_relationships(insights)
+        insight_clusters = build_insight_clusters(
+            insights,
+            relationships,
+        )
+        metadata = load_dataset_metadata()
+        business_relevance = analyze_business_relevance(
+            insights,
+            relationships,
+            metadata,
+        )
+        insight_integrity = analyze_insight_integrity(
+            insights,
+            relationships,
+            prepared_dataframe,
+            metadata,
+        )
+        (
+            causality,
+            missing_context,
+            context_summaries,
+        ) = analyze_causality_and_context(
+            insights,
+            relationships,
+            metadata,
+        )
+
 
         prepared_schema = discover_schema(prepared_dataframe)
 
@@ -85,6 +118,46 @@ async def prepare_uploaded_dataset(
            "insights": [
                insight.model_dump(by_alias=True)
                for insight in insights
+            ],
+           "relationships": [
+               relationship.model_dump(by_alias=True)
+               for relationship in relationships
+            ],
+           "insightClusters": [
+               cluster.model_dump(by_alias=True)
+               for cluster in insight_clusters
+            ],
+           "businessRelevance": [
+               evaluation.model_dump(by_alias=True)
+               for evaluation in business_relevance.business_evaluations
+            ],
+           "priorityEvaluations": [
+               evaluation.model_dump(by_alias=True)
+               for evaluation in business_relevance.priority_evaluations
+            ],
+           "rankedInsights": [
+               ranked.model_dump(by_alias=True)
+               for ranked in business_relevance.ranked_insights
+            ],
+           "topRankedInsights": [
+               ranked.model_dump(by_alias=True)
+               for ranked in business_relevance.top_ranked_insights
+            ],
+           "insightIntegrity": [
+               evaluation.model_dump(by_alias=True)
+               for evaluation in insight_integrity.evaluations
+            ],
+           "causalityEvaluations": [
+               evaluation.model_dump(by_alias=True)
+               for evaluation in causality.evaluations
+            ],
+           "missingContextEvaluations": [
+               evaluation.model_dump(by_alias=True)
+               for evaluation in missing_context.evaluations
+            ],
+           "contextSummaries": [
+               summary.model_dump(by_alias=True)
+               for summary in context_summaries.summaries
             ],
         }
 
