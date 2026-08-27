@@ -207,7 +207,9 @@ public sealed class AnalysisDetailPersistence(
             insightIntegrity,
             causalityEvaluations,
             missingContextEvaluations,
-            story is null ? null : ParseJson(story.StoryPlanJson));
+            story is null ? null : ParseJson(story.StoryPlanJson),
+            story is null ? null : ParseNullableJson(story.GeneratedStoryJson),
+            ProjectStoryGeneration(story));
     }
 
     private static JsonElement ParseJson(string json)
@@ -219,6 +221,27 @@ public sealed class AnalysisDetailPersistence(
     private static JsonElement? ParseNullableJson(string? json)
     {
         return json is null ? null : ParseJson(json);
+    }
+
+    public static AnalysisStoryGenerationDetail? ProjectStoryGeneration(
+        DataStoryBuilder.Domain.Entities.Story? story)
+    {
+        if (story is null
+            || story.GenerationStatus is null
+            && story.PromptVersion is null
+            && story.ModelIdentifier is null
+            && story.GeneratedAt is null
+            && story.GenerationFailureReason is null)
+        {
+            return null;
+        }
+
+        return new AnalysisStoryGenerationDetail(
+            story.GenerationStatus!,
+            story.PromptVersion,
+            story.ModelIdentifier,
+            story.GeneratedAt,
+            story.GenerationFailureReason);
     }
 }
 
@@ -242,7 +265,16 @@ public sealed record AnalysisDetailResult(
     IReadOnlyList<AnalysisInsightIntegrityDetail> InsightIntegrity,
     IReadOnlyList<AnalysisCausalityDetail> CausalityEvaluations,
     IReadOnlyList<AnalysisMissingContextDetail> MissingContextEvaluations,
-    JsonElement? StoryPlan);
+    JsonElement? StoryPlan,
+    JsonElement? GeneratedStory,
+    AnalysisStoryGenerationDetail? StoryGeneration);
+
+public sealed record AnalysisStoryGenerationDetail(
+    string Status,
+    string? PromptVersion,
+    string? ModelIdentifier,
+    DateTimeOffset? GeneratedAt,
+    string? FailureReason);
 
 public sealed record AnalysisInsightDetail(
     string Id,

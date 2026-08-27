@@ -1,4 +1,7 @@
 using DataStoryBuilder.Infrastructure.Persistence;
+using DataStoryBuilder.Application.Stories;
+using DataStoryBuilder.Api;
+using DataStoryBuilder.Infrastructure.Generation;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -23,6 +26,14 @@ builder.Services.AddScoped<IntegrityContextPersistence>();
 builder.Services.AddScoped<AnalysisHistoryPersistence>();
 builder.Services.AddScoped<AnalysisDetailPersistence>();
 builder.Services.AddScoped<StoryPlanPersistence>();
+builder.Services.AddScoped<StoryGenerationPersistence>();
+builder.Services.Configure<LlmOptions>(
+    builder.Configuration.GetSection(LlmOptions.SectionName));
+builder.Services.AddHttpClient<ILlmClient, GroqLlmClient>();
+builder.Services.AddScoped<GroundedPromptBuilder>();
+builder.Services.AddScoped<GeneratedStorySafetyValidator>();
+builder.Services.AddScoped<StoryGenerator>();
+builder.Services.AddScoped<AnalysisStoryGeneration>();
 
 builder.Services.AddHttpClient("AnalyticsService", client =>
 {
@@ -166,6 +177,9 @@ app.MapPost("/api/analyses", async (
     RelationshipRankingPersistence relationshipRankingPersistence,
     IntegrityContextPersistence integrityContextPersistence,
     StoryPlanPersistence storyPlanPersistence,
+    StoryGenerationPersistence storyGenerationPersistence,
+    AnalysisStoryGeneration storyGeneration,
+    ILoggerFactory loggerFactory,
     DataStoryBuilderDbContext dbContext) =>
 {
     const long maxFileSize = 10 * 1024 * 1024;
@@ -218,6 +232,10 @@ app.MapPost("/api/analyses", async (
 
     var analysisId = Guid.NewGuid();
     var cancellationToken = request.HttpContext.RequestAborted;
+    var analyticsCompleted = false;
+    var postCompletionStage = "analytics";
+    var generationLogger = loggerFactory.CreateLogger(
+        "DataStoryBuilder.StoryGeneration");
 
     try
     {
@@ -311,74 +329,161 @@ app.MapPost("/api/analyses", async (
                 statusCode: (int)analyticsResponse.StatusCode);
         }
 
-        await using var resultTransaction =
-            await dbContext.Database.BeginTransactionAsync(
-                cancellationToken);
+        {
+            await using var resultTransaction =
+                await dbContext.Database.BeginTransactionAsync(
+                    cancellationToken);
 
+            try
+            {
+                await analysisProfilePersistence.PersistAsync(
+                    analysisId,
+                    responseBody,
+                    cancellationToken);
+
+                await insightPersistence.PersistAsync(
+                    analysisId,
+                    responseBody,
+                    cancellationToken);
+
+                await relationshipRankingPersistence.PersistAsync(
+                    analysisId,
+                    responseBody,
+                    cancellationToken);
+
+                await integrityContextPersistence.PersistAsync(
+                    analysisId,
+                    responseBody,
+                    cancellationToken);
+
+                await storyPlanPersistence.PersistAsync(
+                    analysisId,
+                    responseBody,
+                    cancellationToken);
+
+                await analysisLifecyclePersistence.MarkCompletedAsync(
+                    analysisId,
+                    cancellationToken);
+
+                await resultTransaction.CommitAsync(cancellationToken);
+                analyticsCompleted = true;
+            }
+            catch
+            {
+                try
+                {
+                    await resultTransaction.RollbackAsync(
+                        CancellationToken.None);
+                }
+                catch
+                {
+                }
+
+                dbContext.ChangeTracker.Clear();
+                throw;
+            }
+        }
+
+        postCompletionStage = "story-generation";
+        AnalysisStoryGenerationResult generatedStoryResult;
         try
         {
-            await analysisProfilePersistence.PersistAsync(
-                analysisId,
-                responseBody,
-                cancellationToken);
-
-            await insightPersistence.PersistAsync(
-                analysisId,
-                responseBody,
-                cancellationToken);
-
-            await relationshipRankingPersistence.PersistAsync(
-                analysisId,
-                responseBody,
-                cancellationToken);
-
-            await integrityContextPersistence.PersistAsync(
-                analysisId,
-                responseBody,
-                cancellationToken);
-
-            await storyPlanPersistence.PersistAsync(
-                analysisId,
-                responseBody,
-                cancellationToken);
-
-            await analysisLifecyclePersistence.MarkCompletedAsync(
-                analysisId,
-                cancellationToken);
-
-            await resultTransaction.CommitAsync(cancellationToken);
+            generatedStoryResult =
+                await storyGeneration.GenerateAndComposeAsync(
+                    responseBody,
+                    cancellationToken);
         }
-        catch
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            generationLogger.LogError(
+                "Post-completion stage {Stage} failed for analysis {AnalysisId} with exception type {ExceptionType}.",
+                postCompletionStage,
+                analysisId,
+                exception.GetType().Name);
+            throw;
+        }
+
+        postCompletionStage = "story-persistence";
+        try
+        {
+            await using var storyTransaction =
+                await dbContext.Database.BeginTransactionAsync(
+                    cancellationToken);
+
+            try
+            {
+                await storyGenerationPersistence.PersistAsync(
+                    analysisId,
+                    generatedStoryResult.Generation,
+                    generatedStoryResult.PromptVersion,
+                    generatedStoryResult.ModelIdentifier,
+                    generatedStoryResult.GeneratedAt,
+                    cancellationToken);
+
+                await storyTransaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                try
+                {
+                    await storyTransaction.RollbackAsync(CancellationToken.None);
+                }
+                catch
+                {
+                }
+
+                throw;
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            dbContext.ChangeTracker.Clear();
+            throw;
+        }
+        catch (Exception exception)
+        {
+            generationLogger.LogError(
+                "Post-completion stage {Stage} failed for analysis {AnalysisId} with exception type {ExceptionType}.",
+                postCompletionStage,
+                analysisId,
+                exception.GetType().Name);
+            dbContext.ChangeTracker.Clear();
+            return Results.Problem(
+                detail: "The analysis completed, but its generated story result could not be persisted.",
+                statusCode: StatusCodes.Status500InternalServerError,
+                extensions: new Dictionary<string, object?>
+                {
+                    ["analysisId"] = analysisId
+                });
+        }
+
+        return Results.Content(
+            generatedStoryResult.ResponseJson,
+            contentType: "application/json",
+            statusCode: StatusCodes.Status200OK);
+    }
+    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+    {
+        throw;
+    }
+    catch
+    {
+        if (!analyticsCompleted)
         {
             try
             {
-                await resultTransaction.RollbackAsync(
-                    CancellationToken.None);
+                await analysisLifecyclePersistence.MarkFailedAsync(
+                    analysisId,
+                    "Unexpected failure while processing the analysis.",
+                    cancellationToken);
             }
             catch
             {
             }
-
-            dbContext.ChangeTracker.Clear();
-            throw;
-        }
-
-        return Results.Content(
-            responseBody,
-            contentType: "application/json",
-            statusCode: StatusCodes.Status200OK);
-    }
-    catch
-    {
-        try
-        {
-            await analysisLifecyclePersistence.MarkFailedAsync(
-                analysisId,
-                "Unexpected failure while processing the analysis.",
-                cancellationToken);
-        }
-        catch
-        {
         }
 
         return Results.Problem(

@@ -562,11 +562,39 @@ namespace DataStoryBuilder.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTimeOffset?>("GeneratedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("generated_at");
+
+                    b.Property<string>("GeneratedStoryJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("generated_story_json");
+
+                    b.Property<string>("GenerationFailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("generation_failure_reason");
+
+                    b.Property<string>("GenerationStatus")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("generation_status");
+
+                    b.Property<string>("ModelIdentifier")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("model_identifier");
+
                     b.Property<string>("PlannerVersion")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("planner_version");
+
+                    b.Property<string>("PromptVersion")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("prompt_version");
 
                     b.Property<string>("StoryPlanJson")
                         .IsRequired()

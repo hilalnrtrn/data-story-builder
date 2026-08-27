@@ -567,6 +567,23 @@ public class DataStoryBuilderDbContext(
             story.Property(item => item.CreatedAt)
                 .HasColumnName("created_at")
                 .IsRequired();
+            story.Property(item => item.GeneratedStoryJson)
+                .HasColumnName("generated_story_json")
+                .HasColumnType("jsonb");
+            story.Property(item => item.PromptVersion)
+                .HasColumnName("prompt_version")
+                .HasMaxLength(64);
+            story.Property(item => item.ModelIdentifier)
+                .HasColumnName("model_identifier")
+                .HasMaxLength(128);
+            story.Property(item => item.GeneratedAt)
+                .HasColumnName("generated_at");
+            story.Property(item => item.GenerationStatus)
+                .HasColumnName("generation_status")
+                .HasMaxLength(16);
+            story.Property(item => item.GenerationFailureReason)
+                .HasColumnName("generation_failure_reason")
+                .HasMaxLength(1000);
 
             story.HasIndex(item => item.AnalysisId)
                 .IsUnique();

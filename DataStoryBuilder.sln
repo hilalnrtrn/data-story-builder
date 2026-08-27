@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataStoryBuilder.Domain", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataStoryBuilder.Infrastructure", "backend\DataStoryBuilder.Infrastructure\DataStoryBuilder.Infrastructure.csproj", "{9DE2729B-4652-4E95-959A-05510B18D0FE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataStoryBuilder.Application.Tests", "backend\DataStoryBuilder.Application.Tests\DataStoryBuilder.Application.Tests.csproj", "{E2567C3F-F98C-4745-8B4D-A0F02D55A0C8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,11 +40,16 @@ Global
 		{9DE2729B-4652-4E95-959A-05510B18D0FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9DE2729B-4652-4E95-959A-05510B18D0FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9DE2729B-4652-4E95-959A-05510B18D0FE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2567C3F-F98C-4745-8B4D-A0F02D55A0C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2567C3F-F98C-4745-8B4D-A0F02D55A0C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2567C3F-F98C-4745-8B4D-A0F02D55A0C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2567C3F-F98C-4745-8B4D-A0F02D55A0C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C2F6CF64-2856-43D5-BD49-AF531B13BA10} = {7E808EF6-16FE-43BC-B5B0-42750D411803}
 		{079EC4E9-B426-4270-811F-E00F236A61F8} = {7E808EF6-16FE-43BC-B5B0-42750D411803}
 		{39378356-80C4-4620-8471-648AAD337168} = {7E808EF6-16FE-43BC-B5B0-42750D411803}
 		{9DE2729B-4652-4E95-959A-05510B18D0FE} = {7E808EF6-16FE-43BC-B5B0-42750D411803}
+		{E2567C3F-F98C-4745-8B4D-A0F02D55A0C8} = {7E808EF6-16FE-43BC-B5B0-42750D411803}
 	EndGlobalSection
 EndGlobal
