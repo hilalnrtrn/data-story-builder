@@ -227,6 +227,80 @@ namespace DataStoryBuilder.Infrastructure.Migrations
                     b.ToTable("evidence", (string)null);
                 });
 
+            modelBuilder.Entity("DataStoryBuilder.Domain.Entities.Hypothesis", b =>
+                {
+                    b.Property<Guid>("AnalysisId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("analysis_id");
+
+                    b.Property<string>("Id")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CausalityStatus")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("causality_status");
+
+                    b.Property<double>("Confidence")
+                        .HasColumnType("double precision")
+                        .HasColumnName("confidence");
+
+                    b.Property<string>("CounterEvidenceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("counter_evidence_json");
+
+                    b.Property<string>("MissingContextJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("missing_context_json");
+
+                    b.Property<string>("ReasonsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("reasons_json");
+
+                    b.Property<string>("SourceInsightIdsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("source_insight_ids_json");
+
+                    b.Property<string>("SourceRelationshipIdsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("source_relationship_ids_json");
+
+                    b.Property<string>("Statement")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("statement");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("status");
+
+                    b.Property<string>("SupportingEvidenceJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("supporting_evidence_json");
+
+                    b.Property<string>("TrackerVersion")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("tracker_version");
+
+                    b.HasKey("AnalysisId", "Id");
+
+                    b.ToTable("hypotheses", (string)null);
+                });
+
             modelBuilder.Entity("DataStoryBuilder.Domain.Entities.Insight", b =>
                 {
                     b.Property<Guid>("AnalysisId")
@@ -640,6 +714,15 @@ namespace DataStoryBuilder.Infrastructure.Migrations
                     b.HasOne("DataStoryBuilder.Domain.Entities.Insight", null)
                         .WithMany()
                         .HasForeignKey("AnalysisId", "InsightId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DataStoryBuilder.Domain.Entities.Hypothesis", b =>
+                {
+                    b.HasOne("DataStoryBuilder.Domain.Entities.Analysis", null)
+                        .WithMany()
+                        .HasForeignKey("AnalysisId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

@@ -177,6 +177,13 @@ public sealed class AnalysisDetailPersistence(
                 ParseJson(item.ContextSummaryJson)))
             .ToList();
 
+        var hypothesisEntities = await dbContext.Hypotheses
+            .AsNoTracking()
+            .Where(item => item.AnalysisId == analysisId)
+            .OrderBy(item => item.Id)
+            .ToListAsync(cancellationToken);
+        var hypotheses = ProjectHypotheses(hypothesisEntities);
+
         var story = await dbContext.Stories
             .AsNoTracking()
             .SingleOrDefaultAsync(
@@ -207,6 +214,7 @@ public sealed class AnalysisDetailPersistence(
             insightIntegrity,
             causalityEvaluations,
             missingContextEvaluations,
+            hypotheses,
             story is null ? null : ParseJson(story.StoryPlanJson),
             story is null ? null : ParseNullableJson(story.GeneratedStoryJson),
             ProjectStoryGeneration(story),
@@ -253,6 +261,26 @@ public sealed class AnalysisDetailPersistence(
     public static JsonElement? ProjectFullStoryAudit(
         DataStoryBuilder.Domain.Entities.Story? story) =>
         story is null ? null : ParseNullableJson(story.FullStoryAuditJson);
+
+    public static IReadOnlyList<AnalysisHypothesisDetail> ProjectHypotheses(
+        IEnumerable<DataStoryBuilder.Domain.Entities.Hypothesis> hypotheses) =>
+        hypotheses
+            .OrderBy(item => item.Id, StringComparer.Ordinal)
+            .Select(item => new AnalysisHypothesisDetail(
+                item.Id,
+                item.AnalysisId,
+                item.Statement,
+                item.Status,
+                item.Confidence,
+                ParseJson(item.SourceInsightIdsJson),
+                ParseJson(item.SourceRelationshipIdsJson),
+                ParseJson(item.SupportingEvidenceJson),
+                ParseJson(item.CounterEvidenceJson),
+                ParseJson(item.MissingContextJson),
+                item.CausalityStatus,
+                ParseJson(item.ReasonsJson),
+                item.TrackerVersion))
+            .ToList();
 }
 
 public sealed record AnalysisDetailResult(
@@ -275,6 +303,7 @@ public sealed record AnalysisDetailResult(
     IReadOnlyList<AnalysisInsightIntegrityDetail> InsightIntegrity,
     IReadOnlyList<AnalysisCausalityDetail> CausalityEvaluations,
     IReadOnlyList<AnalysisMissingContextDetail> MissingContextEvaluations,
+    IReadOnlyList<AnalysisHypothesisDetail> Hypotheses,
     JsonElement? StoryPlan,
     JsonElement? GeneratedStory,
     AnalysisStoryGenerationDetail? StoryGeneration,
@@ -372,3 +401,18 @@ public sealed record AnalysisMissingContextDetail(
     JsonElement MissingContext,
     JsonElement Reasons,
     JsonElement ContextSummary);
+
+public sealed record AnalysisHypothesisDetail(
+    string Id,
+    Guid AnalysisId,
+    string Statement,
+    string Status,
+    double Confidence,
+    JsonElement SourceInsightIds,
+    JsonElement SourceRelationshipIds,
+    JsonElement SupportingEvidence,
+    JsonElement CounterEvidence,
+    JsonElement MissingContext,
+    string CausalityStatus,
+    JsonElement Reasons,
+    string TrackerVersion);

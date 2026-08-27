@@ -20,6 +20,7 @@ public class DataStoryBuilderDbContext(
     public DbSet<MissingContextEvaluation> MissingContextEvaluations =>
         Set<MissingContextEvaluation>();
     public DbSet<Story> Stories => Set<Story>();
+    public DbSet<Hypothesis> Hypotheses => Set<Hypothesis>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -596,6 +597,68 @@ public class DataStoryBuilderDbContext(
             story.HasOne<Analysis>()
                 .WithOne()
                 .HasForeignKey<Story>(item => item.AnalysisId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Hypothesis>(hypothesis =>
+        {
+            hypothesis.ToTable("hypotheses");
+            hypothesis.HasKey(item => new { item.AnalysisId, item.Id });
+
+            hypothesis.Property(item => item.AnalysisId)
+                .HasColumnName("analysis_id")
+                .IsRequired();
+            hypothesis.Property(item => item.Id)
+                .HasColumnName("id")
+                .HasMaxLength(128)
+                .IsRequired();
+            hypothesis.Property(item => item.Statement)
+                .HasColumnName("statement")
+                .HasMaxLength(2000)
+                .IsRequired();
+            hypothesis.Property(item => item.Status)
+                .HasColumnName("status")
+                .HasMaxLength(32)
+                .IsRequired();
+            hypothesis.Property(item => item.Confidence)
+                .HasColumnName("confidence")
+                .IsRequired();
+            hypothesis.Property(item => item.CausalityStatus)
+                .HasColumnName("causality_status")
+                .HasMaxLength(64)
+                .IsRequired();
+            hypothesis.Property(item => item.TrackerVersion)
+                .HasColumnName("tracker_version")
+                .HasMaxLength(64)
+                .IsRequired();
+            hypothesis.Property(item => item.SourceInsightIdsJson)
+                .HasColumnName("source_insight_ids_json")
+                .HasColumnType("jsonb")
+                .IsRequired();
+            hypothesis.Property(item => item.SourceRelationshipIdsJson)
+                .HasColumnName("source_relationship_ids_json")
+                .HasColumnType("jsonb")
+                .IsRequired();
+            hypothesis.Property(item => item.SupportingEvidenceJson)
+                .HasColumnName("supporting_evidence_json")
+                .HasColumnType("jsonb")
+                .IsRequired();
+            hypothesis.Property(item => item.CounterEvidenceJson)
+                .HasColumnName("counter_evidence_json")
+                .HasColumnType("jsonb")
+                .IsRequired();
+            hypothesis.Property(item => item.MissingContextJson)
+                .HasColumnName("missing_context_json")
+                .HasColumnType("jsonb")
+                .IsRequired();
+            hypothesis.Property(item => item.ReasonsJson)
+                .HasColumnName("reasons_json")
+                .HasColumnType("jsonb")
+                .IsRequired();
+
+            hypothesis.HasOne<Analysis>()
+                .WithMany()
+                .HasForeignKey(item => item.AnalysisId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

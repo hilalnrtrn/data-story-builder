@@ -18,6 +18,7 @@ from app.services.relationship_engine import generate_relationships
 from app.services.semantic_roles import detect_semantic_roles
 from app.services.insight_engine import generate_insights
 from app.services.story_planner import build_story_plan
+from app.services.hypothesis_tracker import track_hypotheses
 
 
 
@@ -111,6 +112,13 @@ async def prepare_uploaded_dataset(
             missing_context.evaluations,
             context_summaries.summaries,
         )
+        hypotheses = track_hypotheses(
+            insights,
+            relationships,
+            insight_integrity.evaluations,
+            causality.evaluations,
+            missing_context.evaluations,
+        )
 
 
         prepared_schema = discover_schema(prepared_dataframe)
@@ -171,6 +179,10 @@ async def prepare_uploaded_dataset(
                for summary in context_summaries.summaries
             ],
            "storyPlan": story_plan.model_dump(by_alias=True),
+           "hypotheses": [
+               hypothesis.model_dump(by_alias=True)
+               for hypothesis in hypotheses
+           ],
         }
 
     except DatasetIngestionError as exc:

@@ -315,6 +315,52 @@
     }
   ],
 
+  "expectedHypotheses": [
+    {
+      "id": "GT-HYP-001",
+      "expectedHypothesisId": "HYPOTHESIS-24a31f95d811b00b74b89e57e1b2cb018821279d8f73016c469404727a8c16fd",
+      "sourceMetric": "MarketingSpend",
+      "targetMetric": "Revenue",
+      "sourceInsightIds": [
+        "CHANGE-MarketingSpend-2025-05-2025-06",
+        "CHANGE-Revenue-2025-05-2025-06"
+      ],
+      "sourceRelationshipIds": [
+        "CO_MOVES_WITH-CHANGE-MarketingSpend-2025-05-2025-06-CHANGE-Revenue-2025-05-2025-06"
+      ],
+      "statement": "The observed change in MarketingSpend may be associated with the observed change in Revenue.",
+      "status": "OPEN",
+      "confidence": 0.6,
+      "causalityStatus": "CAUSALITY_NOT_ESTABLISHED",
+      "trackerVersion": "day16-v1",
+      "supportingEvidenceCodes": [
+        "PREVIOUS_PERIOD_VALUE",
+        "CURRENT_PERIOD_VALUE",
+        "ABSOLUTE_CHANGE",
+        "PERCENTAGE_CHANGE"
+      ],
+      "counterEvidenceMetrics": [
+        "Customers",
+        "Orders"
+      ],
+      "missingContextFields": [
+        "CompetitorPrice",
+        "UnitPrice",
+        "PricingChange"
+      ],
+      "reasons": [
+        "CO_MOVES_WITH association detected.",
+        "Causality is not established.",
+        "Supporting evidence coverage: 2/2.",
+        "Relationship confidence: 0.666667.",
+        "Causality safety signal: 1.",
+        "Counter evidence penalty: 0.15.",
+        "Missing context penalty: 0.15.",
+        "Hypothesis confidence: 0.6."
+      ]
+    }
+  ],
+
   "expectedBusinessRanking": [
     {
       "id": "GT-BR-001",

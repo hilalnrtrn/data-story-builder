@@ -1,5 +1,6 @@
 using DataStoryBuilder.Infrastructure.Persistence;
 using DataStoryBuilder.Application.Stories;
+using DataStoryBuilder.Application.Hypotheses;
 using DataStoryBuilder.Api;
 using DataStoryBuilder.Infrastructure.Generation;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,8 @@ builder.Services.AddScoped<AnalysisHistoryPersistence>();
 builder.Services.AddScoped<AnalysisDetailPersistence>();
 builder.Services.AddScoped<StoryPlanPersistence>();
 builder.Services.AddScoped<StoryGenerationPersistence>();
+builder.Services.AddScoped<HypothesisPersistence>();
+builder.Services.AddScoped<HypothesisLifecyclePersistence>();
 builder.Services.Configure<LlmOptions>(
     builder.Configuration.GetSection(LlmOptions.SectionName));
 builder.Services.AddHttpClient<ILlmClient, GroqLlmClient>();
@@ -168,6 +171,67 @@ app.MapGet("/api/analyses/{id:guid}", async (
 .WithName("GetAnalysis")
 .WithOpenApi();
 
+app.MapGet("/api/analyses/{analysisId:guid}/hypotheses", async (
+    Guid analysisId,
+    HypothesisLifecyclePersistence hypothesisLifecyclePersistence,
+    CancellationToken cancellationToken) =>
+{
+    var hypotheses = await hypothesisLifecyclePersistence.GetAsync(
+        analysisId,
+        cancellationToken);
+
+    return hypotheses is null
+        ? Results.NotFound()
+        : Results.Ok(hypotheses);
+})
+.WithName("GetAnalysisHypotheses")
+.WithOpenApi();
+
+app.MapPatch(
+    "/api/analyses/{analysisId:guid}/hypotheses/{hypothesisId}/status",
+    async (
+        Guid analysisId,
+        string hypothesisId,
+        HypothesisStatusUpdateRequest request,
+        HypothesisLifecyclePersistence hypothesisLifecyclePersistence,
+        CancellationToken cancellationToken) =>
+    {
+        if (!HypothesisStatusTransitions.TryParse(
+                request.Status,
+                out var targetStatus))
+        {
+            return Results.BadRequest(new
+            {
+                error = "The target hypothesis status is invalid."
+            });
+        }
+
+        var result = await hypothesisLifecyclePersistence.UpdateStatusAsync(
+            analysisId,
+            hypothesisId,
+            targetStatus,
+            cancellationToken);
+
+        return result.Outcome switch
+        {
+            HypothesisStatusUpdateOutcome.Updated =>
+                Results.Ok(result.Hypothesis),
+            HypothesisStatusUpdateOutcome.AnalysisNotFound =>
+                Results.NotFound(),
+            HypothesisStatusUpdateOutcome.HypothesisNotFound =>
+                Results.NotFound(),
+            HypothesisStatusUpdateOutcome.InvalidTransition =>
+                Results.BadRequest(new
+                {
+                    error = "The requested hypothesis status transition is invalid."
+                }),
+            _ => throw new InvalidOperationException(
+                "Unknown hypothesis status update outcome.")
+        };
+    })
+.WithName("UpdateHypothesisStatus")
+.WithOpenApi();
+
 app.MapPost("/api/analyses", async (
     HttpRequest request,
     IHttpClientFactory httpClientFactory,
@@ -177,6 +241,7 @@ app.MapPost("/api/analyses", async (
     RelationshipRankingPersistence relationshipRankingPersistence,
     IntegrityContextPersistence integrityContextPersistence,
     StoryPlanPersistence storyPlanPersistence,
+    HypothesisPersistence hypothesisPersistence,
     StoryGenerationPersistence storyGenerationPersistence,
     AnalysisStoryGeneration storyGeneration,
     ILoggerFactory loggerFactory,
@@ -361,6 +426,11 @@ app.MapPost("/api/analyses", async (
                     responseBody,
                     cancellationToken);
 
+                await hypothesisPersistence.PersistAsync(
+                    analysisId,
+                    responseBody,
+                    cancellationToken);
+
                 await analysisLifecyclePersistence.MarkCompletedAsync(
                     analysisId,
                     cancellationToken);
@@ -504,3 +574,5 @@ public sealed class AnalysisUploadRequest
 {
     public IFormFile File { get; set; } = default!;
 }
+
+public sealed record HypothesisStatusUpdateRequest(string? Status);
