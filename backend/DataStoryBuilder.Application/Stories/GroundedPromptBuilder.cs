@@ -12,8 +12,14 @@ public sealed class GroundedPromptBuilder
     };
 
     public string Build(GroundedStoryPromptInput input)
+        => Build(input, []);
+
+    public string Build(
+        GroundedStoryPromptInput input,
+        IReadOnlyList<string> auditFeedback)
     {
         ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(auditFeedback);
 
         var prompt = new StringBuilder();
         prompt.AppendLine("SYSTEM / RULES");
@@ -32,6 +38,14 @@ public sealed class GroundedPromptBuilder
         AppendJson(prompt, "VALIDATED FINDINGS", input.Findings);
         AppendJson(prompt, "CAUSALITY CONSTRAINTS", input.CausalityConstraints);
         AppendJson(prompt, "LIMITATIONS", input.Limitations);
+        if (auditFeedback.Count > 0)
+        {
+            AppendJson(
+                prompt,
+                "REGENERATION AUDIT FEEDBACK",
+                auditFeedback.Distinct(StringComparer.Ordinal).ToArray());
+            prompt.AppendLine("Revise the story using only this deterministic audit feedback and the supplied grounded information.");
+        }
         prompt.AppendLine("OUTPUT CONTRACT");
         prompt.AppendLine("GeneratedExecutiveStory: { title, executiveSummary, sections[] }");
         prompt.AppendLine("Each section: { order, type, items[] }");

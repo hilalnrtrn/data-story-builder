@@ -573,6 +573,9 @@ public class DataStoryBuilderDbContext(
             story.Property(item => item.StoryAuditJson)
                 .HasColumnName("story_audit_json")
                 .HasColumnType("jsonb");
+            story.Property(item => item.FullStoryAuditJson)
+                .HasColumnName("full_story_audit_json")
+                .HasColumnType("jsonb");
             story.Property(item => item.PromptVersion)
                 .HasColumnName("prompt_version")
                 .HasMaxLength(64);

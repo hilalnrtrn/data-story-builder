@@ -420,6 +420,7 @@ app.MapPost("/api/analyses", async (
                     analysisId,
                     generatedStoryResult.Generation,
                     generatedStoryResult.StoryAudit,
+                    generatedStoryResult.FullStoryAudit,
                     generatedStoryResult.PromptVersion,
                     generatedStoryResult.ModelIdentifier,
                     generatedStoryResult.GeneratedAt,

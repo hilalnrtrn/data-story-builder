@@ -22,11 +22,13 @@ public sealed class StoryGenerationPersistenceTests
                 1,
                 "OUTCOME",
                 [new GeneratedStoryItem("main-item", "Exact generated wording.")])]);
+        var day14 = Audit(StoryDataDiffStatus.Pass);
 
         StoryGenerationPersistence.Apply(
             story,
             StoryGenerationResult.Succeeded(generated),
-            Audit(StoryDataDiffStatus.Pass),
+            day14,
+            FullAudit(day14),
             "day13-v1",
             "approved-model",
             generatedAt);
@@ -39,6 +41,7 @@ public sealed class StoryGenerationPersistenceTests
         Assert.Null(story.GenerationFailureReason);
         Assert.NotNull(story.GeneratedStoryJson);
         Assert.NotNull(story.StoryAuditJson);
+        Assert.NotNull(story.FullStoryAuditJson);
         using var document = JsonDocument.Parse(story.GeneratedStoryJson);
         Assert.Equal(
             "Exact generated wording.",
@@ -58,6 +61,7 @@ public sealed class StoryGenerationPersistenceTests
             story,
             failure,
             null,
+            null,
             "day13-v1",
             null,
             null);
@@ -65,6 +69,7 @@ public sealed class StoryGenerationPersistenceTests
         Assert.Equal("Failed", story.GenerationStatus);
         Assert.Null(story.GeneratedStoryJson);
         Assert.Null(story.StoryAuditJson);
+        Assert.Null(story.FullStoryAuditJson);
         Assert.Null(story.GeneratedAt);
         Assert.Null(story.ModelIdentifier);
         Assert.Equal("day13-v1", story.PromptVersion);
@@ -83,6 +88,7 @@ public sealed class StoryGenerationPersistenceTests
             StoryGenerationResult.Failed(
                 StoryGenerationFailure.InvalidProviderResponse,
                 new string('x', 1200)),
+            null,
             null,
             null,
             null,
@@ -105,12 +111,14 @@ public sealed class StoryGenerationPersistenceTests
                 && index.Properties.Single().Name == nameof(Story.AnalysisId));
         Assert.Equal("jsonb", entity.FindProperty(nameof(Story.GeneratedStoryJson))!.GetColumnType());
         Assert.Equal("jsonb", entity.FindProperty(nameof(Story.StoryAuditJson))!.GetColumnType());
+        Assert.Equal("jsonb", entity.FindProperty(nameof(Story.FullStoryAuditJson))!.GetColumnType());
         Assert.Equal(64, entity.FindProperty(nameof(Story.PromptVersion))!.GetMaxLength());
         Assert.Equal(128, entity.FindProperty(nameof(Story.ModelIdentifier))!.GetMaxLength());
         Assert.Equal(16, entity.FindProperty(nameof(Story.GenerationStatus))!.GetMaxLength());
         Assert.Equal(1000, entity.FindProperty(nameof(Story.GenerationFailureReason))!.GetMaxLength());
         Assert.True(entity.FindProperty(nameof(Story.GeneratedStoryJson))!.IsNullable);
         Assert.True(entity.FindProperty(nameof(Story.StoryAuditJson))!.IsNullable);
+        Assert.True(entity.FindProperty(nameof(Story.FullStoryAuditJson))!.IsNullable);
     }
 
     [Theory]
@@ -125,11 +133,13 @@ public sealed class StoryGenerationPersistenceTests
             "Revenue overview",
             "Revenue changed.",
             [new GeneratedStorySection(1, "OUTCOME", [new GeneratedStoryItem("main-item", "Revenue changed.")])]);
+        var day14 = Audit(status);
 
         StoryGenerationPersistence.Apply(
             story,
             StoryGenerationResult.Succeeded(generated),
-            Audit(status),
+            day14,
+            FullAudit(day14),
             "day13-v1",
             "approved-model",
             DateTimeOffset.UtcNow);
@@ -145,6 +155,52 @@ public sealed class StoryGenerationPersistenceTests
         Assert.Equal(status == StoryDataDiffStatus.Fail, root.GetProperty("regenerationEligible").GetBoolean());
         Assert.Equal(JsonValueKind.Array, root.GetProperty("auditLimitations").ValueKind);
         Assert.Equal(JsonValueKind.Array, root.GetProperty("numericalMismatches").ValueKind);
+    }
+
+    [Fact]
+    public void FullAuditPersistsSeparatelyAndReloadsWithoutChangingDay14Snapshot()
+    {
+        var story = ExistingStory();
+        var day14 = Audit(StoryDataDiffStatus.Pass);
+        var fullAudit = FullAudit(day14) with
+        {
+            RegenerationAttempted = true,
+            RegenerationAttemptCount = 1
+        };
+        var generated = new GeneratedExecutiveStory(
+            "Revenue overview",
+            "Revenue changed.",
+            [new GeneratedStorySection(1, "OUTCOME", [new GeneratedStoryItem("main-item", "Revenue changed.")])]);
+
+        StoryGenerationPersistence.Apply(
+            story,
+            StoryGenerationResult.Succeeded(generated),
+            day14,
+            fullAudit,
+            "day13-v1",
+            "approved-model",
+            DateTimeOffset.UtcNow);
+
+        using var day14Document = JsonDocument.Parse(story.StoryAuditJson!);
+        Assert.False(day14Document.RootElement.TryGetProperty("narrativeBias", out _));
+        using var fullDocument = JsonDocument.Parse(story.FullStoryAuditJson!);
+        var fullRoot = fullDocument.RootElement;
+        Assert.Equal(JsonValueKind.Object, fullRoot.ValueKind);
+        Assert.Equal((int)StoryAuditDecision.Pass, fullRoot.GetProperty("decision").GetInt32());
+        Assert.Equal("day15-v1", fullRoot.GetProperty("auditorVersion").GetString());
+        Assert.True(fullRoot.GetProperty("regenerationAttempted").GetBoolean());
+        Assert.Equal(1, fullRoot.GetProperty("regenerationAttemptCount").GetInt32());
+        Assert.Equal(
+            (int)StoryDataDiffStatus.Pass,
+            fullRoot.GetProperty("storyDataDiff").GetProperty("status").GetInt32());
+        Assert.Equal(
+            JsonValueKind.Array,
+            fullRoot.GetProperty("narrativeBias").GetProperty("findings").ValueKind);
+
+        var reloaded = AnalysisDetailPersistence.ProjectFullStoryAudit(story);
+        Assert.NotNull(reloaded);
+        Assert.Equal("day15-v1", reloaded.Value.GetProperty("auditorVersion").GetString());
+        Assert.Null(AnalysisDetailPersistence.ProjectFullStoryAudit(ExistingStory()));
     }
 
     [Fact]
@@ -207,4 +263,12 @@ public sealed class StoryGenerationPersistenceTests
         [],
         status == StoryDataDiffStatus.Fail ? ["Unexpected generated source items were found."] : [],
         ["Arbitrary semantic assertions are not verified."]);
+
+    private static FullStoryAuditResult FullAudit(StoryDataDiffResult day14) =>
+        FullStoryAuditor.Audit(
+            day14,
+            new NarrativeBiasResult(
+                NarrativeBiasStatus.Pass,
+                BiasRiskLevel.None,
+                []));
 }

@@ -8,7 +8,8 @@ public sealed record GroundedStoryPromptInput(
     IReadOnlyList<GroundedStorySection> Sections,
     IReadOnlyList<GroundedStoryFinding> Findings,
     IReadOnlyList<GroundedCausalityConstraint> CausalityConstraints,
-    IReadOnlyList<GroundedStoryLimitation> Limitations);
+    IReadOnlyList<GroundedStoryLimitation> Limitations,
+    bool InterpretationLimited = false);
 
 public sealed record GroundedStorySection(
     int Order,
@@ -28,7 +29,8 @@ public sealed record GroundedStoryFinding(
     JsonElement Values,
     IReadOnlyList<GroundedStoryEvidence> Evidence,
     bool RequiresQualification,
-    IReadOnlyList<string> QualificationReasons);
+    IReadOnlyList<string> QualificationReasons,
+    double? Confidence = null);
 
 public sealed record GroundedStoryEvidence(
     string Code,

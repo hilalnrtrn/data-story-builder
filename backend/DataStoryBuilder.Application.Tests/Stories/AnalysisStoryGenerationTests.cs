@@ -38,6 +38,13 @@ public sealed class AnalysisStoryGenerationTests
             (int)StoryDataDiffStatus.Pass,
             result.RootElement.GetProperty("storyAudit").GetProperty("status").GetInt32());
         Assert.NotNull(generationResult.StoryAudit);
+        Assert.NotNull(generationResult.FullStoryAudit);
+        Assert.Equal(
+            (int)StoryAuditDecision.Pass,
+            result.RootElement.GetProperty("fullStoryAudit").GetProperty("decision").GetInt32());
+        Assert.Equal(
+            "day15-v1",
+            result.RootElement.GetProperty("fullStoryAudit").GetProperty("auditorVersion").GetString());
         Assert.Equal(1, client.CallCount);
         Assert.Contains("REVENUE_CHANGE", client.Prompt);
         Assert.DoesNotContain("RAW_FILE_BYTES", client.Prompt);
@@ -58,6 +65,7 @@ public sealed class AnalysisStoryGenerationTests
         Assert.Equal(42, result.RootElement.GetProperty("existingField").GetInt32());
         Assert.Equal(JsonValueKind.Null, result.RootElement.GetProperty("generatedStory").ValueKind);
         Assert.Equal(JsonValueKind.Null, result.RootElement.GetProperty("storyAudit").ValueKind);
+        Assert.Equal(JsonValueKind.Null, result.RootElement.GetProperty("fullStoryAudit").ValueKind);
         var generation = result.RootElement.GetProperty("storyGeneration");
         Assert.Equal("Failed", generation.GetProperty("status").GetString());
         Assert.Equal(expectedCategory, generation.GetProperty("failureCategory").GetString());
@@ -148,7 +156,7 @@ public sealed class AnalysisStoryGenerationTests
             services);
     }
 
-    private const string AnalyticsJson =
+    internal const string AnalyticsJson =
         """
         {
           "existingField":42,
@@ -170,7 +178,7 @@ public sealed class AnalysisStoryGenerationTests
         }
         """;
 
-    private const string ValidStoryJson =
+    internal const string ValidStoryJson =
         "{\"title\":\"Revenue overview\",\"executiveSummary\":\"Revenue changed while MarketingSpend moved alongside Revenue.\",\"sections\":[{\"order\":1,\"type\":\"OUTCOME\",\"items\":[{\"sourceItemId\":\"main-item\",\"text\":\"Revenue changed.\"}]},{\"order\":2,\"type\":\"ASSOCIATED_SIGNALS\",\"items\":[{\"sourceItemId\":\"associated-item\",\"text\":\"MarketingSpend moved alongside Revenue.\"}]},{\"order\":3,\"type\":\"LIMITATIONS\",\"items\":[{\"sourceItemId\":\"missing-item\",\"text\":\"CompetitorPrice is unavailable.\"}]}]}";
 
     private sealed class FakeLlmClient : ILlmClient

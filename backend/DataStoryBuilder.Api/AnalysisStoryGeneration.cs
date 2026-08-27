@@ -25,6 +25,8 @@ public sealed class AnalysisStoryGeneration(
         var analysisId = GetAnalysisId(analyticsDocument.RootElement);
         StoryGenerationResult generation;
         StoryDataDiffResult? storyAudit = null;
+        FullStoryAuditResult? fullStoryAudit = null;
+        var regenerationAttemptCount = 0;
 
         safeLogger.LogInformation(
             "Story generation substage {Substage} started for analysis {AnalysisId}.",
@@ -54,8 +56,11 @@ public sealed class AnalysisStoryGeneration(
                 analysisId);
             try
             {
+                var groundedInput = GroundedStoryPromptProjector.Create(
+                    analyticsDocument.RootElement);
                 generation = await generator.GenerateAsync(
-                    analyticsDocument.RootElement,
+                    groundedInput,
+                    [],
                     (substage, state) =>
                     {
                         currentSubstage = substage;
@@ -66,6 +71,68 @@ public sealed class AnalysisStoryGeneration(
                             analysisId);
                     },
                     cancellationToken);
+
+                if (generation.IsSuccess)
+                {
+                    (storyAudit, fullStoryAudit) = Audit(
+                        generation.Story!,
+                        groundedInput);
+                }
+
+                if (fullStoryAudit is not null
+                    && StoryRegenerationPolicy.ShouldRegenerate(
+                        fullStoryAudit,
+                        regenerationAttemptCount))
+                {
+                    regenerationAttemptCount++;
+                    var initialGeneration = generation;
+                    var initialStoryAudit = storyAudit!;
+                    var initialFullStoryAudit = fullStoryAudit;
+                    var regenerated = await generator.GenerateAsync(
+                        groundedInput,
+                        fullStoryAudit.Reasons,
+                        (substage, state) =>
+                        {
+                            currentSubstage = $"regeneration-{substage}";
+                            safeLogger.LogInformation(
+                                "Story regeneration substage {Substage} {State} for analysis {AnalysisId}.",
+                                substage,
+                                state,
+                                analysisId);
+                        },
+                        cancellationToken);
+                    if (regenerated.IsSuccess)
+                    {
+                        generation = regenerated;
+                        (storyAudit, fullStoryAudit) = Audit(
+                            regenerated.Story!,
+                            groundedInput);
+                        fullStoryAudit = fullStoryAudit with
+                        {
+                            RegenerationAttempted = true,
+                            RegenerationAttemptCount = regenerationAttemptCount
+                        };
+                    }
+                    else
+                    {
+                        generation = initialGeneration;
+                        storyAudit = initialStoryAudit;
+                        fullStoryAudit = initialFullStoryAudit with
+                        {
+                            RegenerationAttempted = true,
+                            RegenerationAttemptCount = regenerationAttemptCount,
+                            RegenerationFailureReason = Bound(
+                                regenerated.FailureReason
+                                    ?? "Story regeneration failed.")
+                        };
+                    }
+                }
+            }
+            catch (JsonException) when (currentSubstage == "grounded-projection")
+            {
+                generation = StoryGenerationResult.Failed(
+                    StoryGenerationFailure.GroundingPreconditionFailed,
+                    "The analytics response does not contain a consistent grounded story plan.");
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
@@ -84,11 +151,11 @@ public sealed class AnalysisStoryGeneration(
                 "Story generation is not configured.");
         }
 
-        if (generation.IsSuccess)
+        if (generation.IsSuccess && storyAudit is null)
         {
             var groundedInput = GroundedStoryPromptProjector.Create(
                 analyticsDocument.RootElement);
-            storyAudit = StoryDataDiffEvaluator.Evaluate(
+            (storyAudit, fullStoryAudit) = Audit(
                 generation.Story!,
                 groundedInput);
         }
@@ -106,6 +173,9 @@ public sealed class AnalysisStoryGeneration(
         response["storyAudit"] = storyAudit is null
             ? null
             : JsonSerializer.SerializeToNode(storyAudit, JsonOptions);
+        response["fullStoryAudit"] = fullStoryAudit is null
+            ? null
+            : JsonSerializer.SerializeToNode(fullStoryAudit, JsonOptions);
         var promptVersion = NullIfWhiteSpace(configuredOptions.PromptVersion);
         var modelIdentifier = NullIfWhiteSpace(configuredOptions.Model);
         var generatedAt = generation.IsSuccess
@@ -118,7 +188,10 @@ public sealed class AnalysisStoryGeneration(
             ["promptVersion"] = promptVersion,
             ["modelIdentifier"] = modelIdentifier,
             ["generatedAt"] = generatedAt,
-            ["failureReason"] = generation.FailureReason
+            ["failureReason"] = generation.FailureReason,
+            ["regenerationAttempted"] = regenerationAttemptCount > 0,
+            ["regenerationAttemptCount"] = regenerationAttemptCount,
+            ["regenerationFailureReason"] = fullStoryAudit?.RegenerationFailureReason
         };
         safeLogger.LogInformation(
             "Story generation substage {Substage} completed for analysis {AnalysisId}.",
@@ -129,6 +202,7 @@ public sealed class AnalysisStoryGeneration(
             response.ToJsonString(JsonOptions),
             generation,
             storyAudit,
+            fullStoryAudit,
             promptVersion,
             modelIdentifier,
             generatedAt);
@@ -140,6 +214,18 @@ public sealed class AnalysisStoryGeneration(
 
     private static string? NullIfWhiteSpace(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private static (StoryDataDiffResult StoryAudit, FullStoryAuditResult FullStoryAudit) Audit(
+        GeneratedExecutiveStory story,
+        GroundedStoryPromptInput groundedInput)
+    {
+        var storyAudit = StoryDataDiffEvaluator.Evaluate(story, groundedInput);
+        var narrativeBias = NarrativeBiasEvaluator.Evaluate(story, groundedInput);
+        return (storyAudit, FullStoryAuditor.Audit(storyAudit, narrativeBias));
+    }
+
+    private static string Bound(string value) =>
+        value.Length <= 1000 ? value : value[..1000];
 
     private static string GetAnalysisId(JsonElement analyticsResponse)
     {
@@ -159,6 +245,7 @@ public sealed record AnalysisStoryGenerationResult(
     string ResponseJson,
     StoryGenerationResult Generation,
     StoryDataDiffResult? StoryAudit,
+    FullStoryAuditResult? FullStoryAudit,
     string? PromptVersion,
     string? ModelIdentifier,
     DateTimeOffset? GeneratedAt);

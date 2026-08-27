@@ -562,6 +562,10 @@ namespace DataStoryBuilder.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("FullStoryAuditJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("full_story_audit_json");
+
                     b.Property<DateTimeOffset?>("GeneratedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("generated_at");

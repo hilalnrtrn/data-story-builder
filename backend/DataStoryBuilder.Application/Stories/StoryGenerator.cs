@@ -32,9 +32,25 @@ public sealed class StoryGenerator(
                 "The analytics response does not contain a consistent grounded story plan.");
         }
 
+        return await GenerateAsync(
+            groundedInput,
+            [],
+            reportSubstage,
+            cancellationToken);
+    }
+
+    public async Task<StoryGenerationResult> GenerateAsync(
+        GroundedStoryPromptInput groundedInput,
+        IReadOnlyList<string> auditFeedback,
+        Action<string, string>? reportSubstage = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(groundedInput);
+        ArgumentNullException.ThrowIfNull(auditFeedback);
+
         reportSubstage?.Invoke("grounded-projection", "completed");
         reportSubstage?.Invoke("prompt-build", "started");
-        var groundedPrompt = promptBuilder.Build(groundedInput);
+        var groundedPrompt = promptBuilder.Build(groundedInput, auditFeedback);
         reportSubstage?.Invoke("prompt-build", "completed");
         reportSubstage?.Invoke("schema-build", "started");
         var generatedStorySchema = GeneratedExecutiveStorySchema.Build();

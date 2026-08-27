@@ -16,6 +16,7 @@ public sealed class StoryGenerationPersistence(
         Guid analysisId,
         StoryGenerationResult generation,
         StoryDataDiffResult? storyAudit,
+        FullStoryAuditResult? fullStoryAudit,
         string? promptVersion,
         string? modelIdentifier,
         DateTimeOffset? generatedAt,
@@ -29,6 +30,7 @@ public sealed class StoryGenerationPersistence(
             story,
             generation,
             storyAudit,
+            fullStoryAudit,
             promptVersion,
             modelIdentifier,
             generatedAt);
@@ -40,6 +42,7 @@ public sealed class StoryGenerationPersistence(
         Story story,
         StoryGenerationResult generation,
         StoryDataDiffResult? storyAudit,
+        FullStoryAuditResult? fullStoryAudit,
         string? promptVersion,
         string? modelIdentifier,
         DateTimeOffset? generatedAt)
@@ -53,11 +56,15 @@ public sealed class StoryGenerationPersistence(
         if (generation.IsSuccess)
         {
             ArgumentNullException.ThrowIfNull(storyAudit);
+            ArgumentNullException.ThrowIfNull(fullStoryAudit);
             story.GeneratedStoryJson = JsonSerializer.Serialize(
                 generation.Story,
                 JsonOptions);
             story.StoryAuditJson = JsonSerializer.Serialize(
                 storyAudit,
+                JsonOptions);
+            story.FullStoryAuditJson = JsonSerializer.Serialize(
+                fullStoryAudit,
                 JsonOptions);
             story.GeneratedAt = generatedAt
                 ?? throw new ArgumentNullException(nameof(generatedAt));
@@ -68,6 +75,7 @@ public sealed class StoryGenerationPersistence(
 
         story.GeneratedStoryJson = null;
         story.StoryAuditJson = null;
+        story.FullStoryAuditJson = null;
         story.GeneratedAt = null;
         story.GenerationStatus = "Failed";
         story.GenerationFailureReason = Bound(generation.FailureReason!);

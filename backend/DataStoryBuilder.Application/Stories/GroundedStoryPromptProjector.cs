@@ -94,7 +94,8 @@ public static class GroundedStoryPromptProjector
             sections.ToArray(),
             findings.ToArray(),
             constraints,
-            limitations.ToArray());
+            limitations.ToArray(),
+            GetBoolean(storyPlan, "interpretationLimited"));
     }
 
     private static Dictionary<string, JsonElement> BuildStoryItemLookup(
@@ -206,7 +207,8 @@ public static class GroundedStoryPromptProjector
             GetObject(insight, "values").Clone(),
             evidence.ToArray(),
             requiresQualification,
-            qualificationReasons);
+            qualificationReasons,
+            GetOptionalDouble(insight, "confidence"));
     }
 
     private static GroundedStoryLimitation ProjectLimitation(JsonElement item) =>
@@ -302,6 +304,24 @@ public static class GroundedStoryPromptProjector
 
     private static bool GetBoolean(JsonElement parent, string name) =>
         GetProperty(parent, name).GetBoolean();
+
+    private static double? GetOptionalDouble(JsonElement parent, string name)
+    {
+        if (!parent.TryGetProperty(name, out var property)
+            || property.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (property.ValueKind != JsonValueKind.Number
+            || !property.TryGetDouble(out var value))
+        {
+            throw new JsonException(
+                $"Property '{name}' must be a number or null.");
+        }
+
+        return value;
+    }
 
     private static int GetInt32(JsonElement parent, string name) =>
         GetProperty(parent, name).GetInt32();
