@@ -24,6 +24,7 @@ public sealed class AnalysisStoryGeneration(
         using var analyticsDocument = JsonDocument.Parse(analyticsJson);
         var analysisId = GetAnalysisId(analyticsDocument.RootElement);
         StoryGenerationResult generation;
+        StoryDataDiffResult? storyAudit = null;
 
         safeLogger.LogInformation(
             "Story generation substage {Substage} started for analysis {AnalysisId}.",
@@ -83,6 +84,15 @@ public sealed class AnalysisStoryGeneration(
                 "Story generation is not configured.");
         }
 
+        if (generation.IsSuccess)
+        {
+            var groundedInput = GroundedStoryPromptProjector.Create(
+                analyticsDocument.RootElement);
+            storyAudit = StoryDataDiffEvaluator.Evaluate(
+                generation.Story!,
+                groundedInput);
+        }
+
         safeLogger.LogInformation(
             "Story generation substage {Substage} started for analysis {AnalysisId}.",
             "response-compose",
@@ -93,6 +103,9 @@ public sealed class AnalysisStoryGeneration(
         response["generatedStory"] = generation.Story is null
             ? null
             : JsonSerializer.SerializeToNode(generation.Story, JsonOptions);
+        response["storyAudit"] = storyAudit is null
+            ? null
+            : JsonSerializer.SerializeToNode(storyAudit, JsonOptions);
         var promptVersion = NullIfWhiteSpace(configuredOptions.PromptVersion);
         var modelIdentifier = NullIfWhiteSpace(configuredOptions.Model);
         var generatedAt = generation.IsSuccess
@@ -115,6 +128,7 @@ public sealed class AnalysisStoryGeneration(
         return new AnalysisStoryGenerationResult(
             response.ToJsonString(JsonOptions),
             generation,
+            storyAudit,
             promptVersion,
             modelIdentifier,
             generatedAt);
@@ -144,6 +158,7 @@ public sealed class AnalysisStoryGeneration(
 public sealed record AnalysisStoryGenerationResult(
     string ResponseJson,
     StoryGenerationResult Generation,
+    StoryDataDiffResult? StoryAudit,
     string? PromptVersion,
     string? ModelIdentifier,
     DateTimeOffset? GeneratedAt);

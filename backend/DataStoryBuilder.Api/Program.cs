@@ -419,6 +419,7 @@ app.MapPost("/api/analyses", async (
                 await storyGenerationPersistence.PersistAsync(
                     analysisId,
                     generatedStoryResult.Generation,
+                    generatedStoryResult.StoryAudit,
                     generatedStoryResult.PromptVersion,
                     generatedStoryResult.ModelIdentifier,
                     generatedStoryResult.GeneratedAt,

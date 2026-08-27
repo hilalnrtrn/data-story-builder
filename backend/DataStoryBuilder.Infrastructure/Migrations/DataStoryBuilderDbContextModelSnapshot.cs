@@ -596,6 +596,10 @@ namespace DataStoryBuilder.Infrastructure.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("prompt_version");
 
+                    b.Property<string>("StoryAuditJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("story_audit_json");
+
                     b.Property<string>("StoryPlanJson")
                         .IsRequired()
                         .HasColumnType("jsonb")

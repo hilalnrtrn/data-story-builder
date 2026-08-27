@@ -17,7 +17,8 @@ public sealed class AnalysisStoryGenerationTests
         var client = new FakeLlmClient(ValidStoryJson);
         var service = CreateService(client);
 
-        var output = (await service.GenerateAndComposeAsync(AnalyticsJson)).ResponseJson;
+        var generationResult = await service.GenerateAndComposeAsync(AnalyticsJson);
+        var output = generationResult.ResponseJson;
 
         using var original = JsonDocument.Parse(AnalyticsJson);
         using var result = JsonDocument.Parse(output);
@@ -33,6 +34,10 @@ public sealed class AnalysisStoryGenerationTests
         Assert.Equal(
             "Succeeded",
             result.RootElement.GetProperty("storyGeneration").GetProperty("status").GetString());
+        Assert.Equal(
+            (int)StoryDataDiffStatus.Pass,
+            result.RootElement.GetProperty("storyAudit").GetProperty("status").GetInt32());
+        Assert.NotNull(generationResult.StoryAudit);
         Assert.Equal(1, client.CallCount);
         Assert.Contains("REVENUE_CHANGE", client.Prompt);
         Assert.DoesNotContain("RAW_FILE_BYTES", client.Prompt);
@@ -52,6 +57,7 @@ public sealed class AnalysisStoryGenerationTests
 
         Assert.Equal(42, result.RootElement.GetProperty("existingField").GetInt32());
         Assert.Equal(JsonValueKind.Null, result.RootElement.GetProperty("generatedStory").ValueKind);
+        Assert.Equal(JsonValueKind.Null, result.RootElement.GetProperty("storyAudit").ValueKind);
         var generation = result.RootElement.GetProperty("storyGeneration");
         Assert.Equal("Failed", generation.GetProperty("status").GetString());
         Assert.Equal(expectedCategory, generation.GetProperty("failureCategory").GetString());

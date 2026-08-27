@@ -209,7 +209,8 @@ public sealed class AnalysisDetailPersistence(
             missingContextEvaluations,
             story is null ? null : ParseJson(story.StoryPlanJson),
             story is null ? null : ParseNullableJson(story.GeneratedStoryJson),
-            ProjectStoryGeneration(story));
+            ProjectStoryGeneration(story),
+            ProjectStoryAudit(story));
     }
 
     private static JsonElement ParseJson(string json)
@@ -243,6 +244,10 @@ public sealed class AnalysisDetailPersistence(
             story.GeneratedAt,
             story.GenerationFailureReason);
     }
+
+    public static JsonElement? ProjectStoryAudit(
+        DataStoryBuilder.Domain.Entities.Story? story) =>
+        story is null ? null : ParseNullableJson(story.StoryAuditJson);
 }
 
 public sealed record AnalysisDetailResult(
@@ -267,7 +272,8 @@ public sealed record AnalysisDetailResult(
     IReadOnlyList<AnalysisMissingContextDetail> MissingContextEvaluations,
     JsonElement? StoryPlan,
     JsonElement? GeneratedStory,
-    AnalysisStoryGenerationDetail? StoryGeneration);
+    AnalysisStoryGenerationDetail? StoryGeneration,
+    JsonElement? StoryAudit);
 
 public sealed record AnalysisStoryGenerationDetail(
     string Status,
