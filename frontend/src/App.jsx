@@ -3,6 +3,7 @@ import {
   AnalysisApiError,
   getAnalysisDetail,
   getAnalysisHistory,
+  updateHypothesisStatus,
   uploadAnalysis,
 } from './api/analyses.js'
 import AppShell from './components/layout/AppShell.jsx'
@@ -10,6 +11,9 @@ import AnalysisHistory from './components/history/AnalysisHistory.jsx'
 import AnalysisErrorPanel from './components/feedback/AnalysisErrorPanel.jsx'
 import AnalysisProgressPanel from './components/feedback/AnalysisProgressPanel.jsx'
 import InsightExplorer from './components/insights/InsightExplorer.jsx'
+import ExecutiveStory from './components/story/ExecutiveStory.jsx'
+import StoryAuditWorkspace from './components/audit/StoryAuditWorkspace.jsx'
+import HypothesisExplorer from './components/hypotheses/HypothesisExplorer.jsx'
 import DatasetHealth from './components/overview/DatasetHealth.jsx'
 import PipelineSummary from './components/overview/PipelineSummary.jsx'
 import SummaryCards from './components/overview/SummaryCards.jsx'
@@ -258,7 +262,7 @@ function App() {
     let uploadedAnalysisId = null
 
     try {
-      uploadedAnalysisId = await uploadAnalysis(selectedFile)
+      uploadedAnalysisId = await uploadAnalysis(selectedFile, language)
       storeAnalysisId(uploadedAnalysisId)
       setAnalysisRequestState('loading-detail')
       await loadPersistedAnalysis(uploadedAnalysisId)
@@ -431,6 +435,25 @@ function App() {
     } finally {
       setHistorySelectionId(null)
     }
+  }
+
+  const handleHypothesisStatusUpdate = async (hypothesisId, status) => {
+    const analysisId = currentAnalysis?.id
+    if (!analysisId) throw new AnalysisApiError('')
+
+    const updatedHypothesis = await updateHypothesisStatus(analysisId, hypothesisId, status)
+
+    setCurrentAnalysis((activeAnalysis) => {
+      if (activeAnalysis?.id !== analysisId) return activeAnalysis
+      return {
+        ...activeAnalysis,
+        hypotheses: (activeAnalysis.hypotheses || []).map((hypothesis) =>
+          hypothesis?.id === updatedHypothesis?.id ? updatedHypothesis : hypothesis,
+        ),
+      }
+    })
+
+    return updatedHypothesis
   }
 
   const getAnalysisErrorMessage = () => {
@@ -689,9 +712,50 @@ function App() {
     if (activeSection === 'insights') {
       return (
         <InsightExplorer
+          key={currentAnalysis?.id || 'no-analysis'}
           analysis={currentAnalysis}
           language={language}
           copy={copy.insightExplorer}
+          onStartAnalysis={() => handleSectionChange('new-analysis')}
+          onOpenHistory={() => handleSectionChange('history')}
+        />
+      )
+    }
+
+    if (activeSection === 'executive-story') {
+      return (
+        <ExecutiveStory
+          key={currentAnalysis?.id || 'no-analysis'}
+          analysis={currentAnalysis}
+          language={language}
+          copy={copy.executiveStory}
+          onStartAnalysis={() => handleSectionChange('new-analysis')}
+          onOpenHistory={() => handleSectionChange('history')}
+        />
+      )
+    }
+
+    if (activeSection === 'story-audit') {
+      return (
+        <StoryAuditWorkspace
+          key={currentAnalysis?.id || 'no-analysis'}
+          analysis={currentAnalysis}
+          language={language}
+          copy={copy.storyAudit}
+          onStartAnalysis={() => handleSectionChange('new-analysis')}
+          onOpenHistory={() => handleSectionChange('history')}
+        />
+      )
+    }
+
+    if (activeSection === 'hypotheses') {
+      return (
+        <HypothesisExplorer
+          key={currentAnalysis?.id || 'no-analysis'}
+          analysis={currentAnalysis}
+          language={language}
+          copy={copy.hypothesisExplorer}
+          onStatusUpdate={handleHypothesisStatusUpdate}
           onStartAnalysis={() => handleSectionChange('new-analysis')}
           onOpenHistory={() => handleSectionChange('history')}
         />
@@ -717,7 +781,13 @@ function App() {
       theme={theme}
       onThemeChange={handleThemeChange}
       onNewAnalysis={() => handleSectionChange('new-analysis')}
-      analysis={activeSection === 'overview' ? currentAnalysis : null}
+      analysis={[
+        'overview',
+        'insights',
+        'executive-story',
+        'story-audit',
+        'hypotheses',
+      ].includes(activeSection) ? currentAnalysis : null}
       copy={copy}
     >
       {renderSection()}

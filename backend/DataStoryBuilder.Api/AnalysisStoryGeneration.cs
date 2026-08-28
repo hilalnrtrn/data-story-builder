@@ -19,7 +19,18 @@ public sealed class AnalysisStoryGeneration(
     public async Task<AnalysisStoryGenerationResult> GenerateAndComposeAsync(
         string analyticsJson,
         CancellationToken cancellationToken = default)
+        => await GenerateAndComposeAsync(
+            analyticsJson,
+            StoryGenerationLanguage.Default,
+            cancellationToken);
+
+    public async Task<AnalysisStoryGenerationResult> GenerateAndComposeAsync(
+        string analyticsJson,
+        string generationLanguage,
+        CancellationToken cancellationToken = default)
     {
+        var normalizedLanguage = StoryGenerationLanguage.RequireSupported(
+            generationLanguage);
         var safeLogger = logger ?? NullLogger<AnalysisStoryGeneration>.Instance;
         using var analyticsDocument = JsonDocument.Parse(analyticsJson);
         var analysisId = GetAnalysisId(analyticsDocument.RootElement);
@@ -57,7 +68,8 @@ public sealed class AnalysisStoryGeneration(
             try
             {
                 var groundedInput = GroundedStoryPromptProjector.Create(
-                    analyticsDocument.RootElement);
+                    analyticsDocument.RootElement,
+                    normalizedLanguage);
                 generation = await generator.GenerateAsync(
                     groundedInput,
                     [],
@@ -154,7 +166,8 @@ public sealed class AnalysisStoryGeneration(
         if (generation.IsSuccess && storyAudit is null)
         {
             var groundedInput = GroundedStoryPromptProjector.Create(
-                analyticsDocument.RootElement);
+                analyticsDocument.RootElement,
+                normalizedLanguage);
             (storyAudit, fullStoryAudit) = Audit(
                 generation.Story!,
                 groundedInput);
@@ -188,6 +201,7 @@ public sealed class AnalysisStoryGeneration(
             ["promptVersion"] = promptVersion,
             ["modelIdentifier"] = modelIdentifier,
             ["generatedAt"] = generatedAt,
+            ["language"] = normalizedLanguage,
             ["failureReason"] = generation.FailureReason,
             ["regenerationAttempted"] = regenerationAttemptCount > 0,
             ["regenerationAttemptCount"] = regenerationAttemptCount,
@@ -205,7 +219,8 @@ public sealed class AnalysisStoryGeneration(
             fullStoryAudit,
             promptVersion,
             modelIdentifier,
-            generatedAt);
+            generatedAt,
+            normalizedLanguage);
     }
 
     private static bool IsConfigured(LlmOptions value) =>
@@ -248,4 +263,5 @@ public sealed record AnalysisStoryGenerationResult(
     FullStoryAuditResult? FullStoryAudit,
     string? PromptVersion,
     string? ModelIdentifier,
-    DateTimeOffset? GeneratedAt);
+    DateTimeOffset? GeneratedAt,
+    string GenerationLanguage);

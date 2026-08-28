@@ -45,6 +45,7 @@ export function mapAnalysisDetail(payload) {
     causalityEvaluations: asArray(payload.causalityEvaluations),
     missingContextEvaluations: asArray(payload.missingContextEvaluations),
     hypotheses: asArray(payload.hypotheses),
+    storyPlan: asObjectOrNull(payload.storyPlan),
     storyGeneration: asObjectOrNull(payload.storyGeneration),
     generatedStory: asObjectOrNull(payload.generatedStory),
     storyAudit: asObjectOrNull(payload.storyAudit),

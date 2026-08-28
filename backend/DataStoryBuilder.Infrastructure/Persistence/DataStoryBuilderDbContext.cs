@@ -591,6 +591,9 @@ public class DataStoryBuilderDbContext(
             story.Property(item => item.GenerationFailureReason)
                 .HasColumnName("generation_failure_reason")
                 .HasMaxLength(1000);
+            story.Property(item => item.GenerationLanguage)
+                .HasColumnName("generation_language")
+                .HasMaxLength(2);
 
             story.HasIndex(item => item.AnalysisId)
                 .IsUnique();

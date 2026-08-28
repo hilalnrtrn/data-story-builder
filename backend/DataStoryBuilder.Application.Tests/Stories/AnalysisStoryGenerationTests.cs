@@ -51,6 +51,28 @@ public sealed class AnalysisStoryGenerationTests
     }
 
     [Theory]
+    [InlineData("tr", "in Turkish")]
+    [InlineData("en", "in English")]
+    public async Task RequestedLanguageReachesGroundedPromptAndResponseMetadata(
+        string language,
+        string expectedInstruction)
+    {
+        var client = new FakeLlmClient(ValidStoryJson);
+
+        var generated = await CreateService(client).GenerateAndComposeAsync(
+            AnalyticsJson,
+            language);
+
+        Assert.Contains(expectedInstruction, client.Prompt);
+        Assert.Equal(language, generated.GenerationLanguage);
+        using var response = JsonDocument.Parse(generated.ResponseJson);
+        Assert.Equal(
+            language,
+            response.RootElement.GetProperty("storyGeneration")
+                .GetProperty("language").GetString());
+    }
+
+    [Theory]
     [InlineData(LlmClientError.Timeout, "Timeout")]
     [InlineData(LlmClientError.RateLimited, "RateLimited")]
     [InlineData(LlmClientError.ProviderUnavailable, "ProviderUnavailable")]

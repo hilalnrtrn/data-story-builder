@@ -37,10 +37,11 @@ public static partial class StoryNumericalAuditor
                 continue;
             }
 
-            var isPercent = match.Value.EndsWith('%');
-            var numericText = match.Value
-                .TrimEnd('%')
-                .Replace(",", string.Empty, StringComparison.Ordinal);
+            var isPercent = match.Value.StartsWith('%')
+                || match.Value.EndsWith('%');
+            var numericText = NormalizeNumericText(
+                match.Value.Trim('%'),
+                isPercent);
             if (!decimal.TryParse(
                 numericText,
                 NumericStyles,
@@ -62,6 +63,79 @@ public static partial class StoryNumericalAuditor
         }
 
         return result;
+    }
+
+    private static string NormalizeNumericText(
+        string numericText,
+        bool isPercent)
+    {
+        var sign = numericText.Length > 0 && numericText[0] is '-' or '+'
+            ? numericText[..1]
+            : string.Empty;
+        var unsigned = sign.Length == 0 ? numericText : numericText[1..];
+
+        if (isPercent && HasSingleSeparator(unsigned, out _))
+        {
+            return sign + unsigned.Replace(',', '.');
+        }
+
+        var decimalPoint = unsigned.LastIndexOf('.');
+        if (decimalPoint > 0
+            && IsClearlyGroupedInteger(unsigned[..decimalPoint], ',')
+            && IsAsciiDigits(unsigned[(decimalPoint + 1)..]))
+        {
+            return sign
+                + unsigned[..decimalPoint].Replace(",", string.Empty, StringComparison.Ordinal)
+                + unsigned[decimalPoint..];
+        }
+
+        if (IsClearlyGroupedInteger(unsigned, '.'))
+        {
+            return sign + unsigned.Replace(".", string.Empty, StringComparison.Ordinal);
+        }
+
+        if (IsClearlyGroupedInteger(unsigned, ','))
+        {
+            return sign + unsigned.Replace(",", string.Empty, StringComparison.Ordinal);
+        }
+
+        var comma = unsigned.IndexOf(',');
+        if (comma > 0
+            && comma == unsigned.LastIndexOf(',')
+            && unsigned.Length - comma - 1 is 1 or 2
+            && IsAsciiDigits(unsigned[..comma])
+            && IsAsciiDigits(unsigned[(comma + 1)..]))
+        {
+            return sign + unsigned.Replace(',', '.');
+        }
+
+        return numericText;
+    }
+
+    private static bool IsClearlyGroupedInteger(string value, char separator)
+    {
+        var groups = value.Split(separator);
+        return groups.Length > 1
+            && groups[0].Length is >= 1 and <= 3
+            && IsAsciiDigits(groups[0])
+            && groups.Skip(1).All(group =>
+                group.Length == 3 && IsAsciiDigits(group));
+    }
+
+    private static bool IsAsciiDigits(string value) =>
+        value.Length > 0 && value.All(character => character is >= '0' and <= '9');
+
+    private static bool HasSingleSeparator(string value, out int separatorIndex)
+    {
+        var dotIndex = value.IndexOf('.');
+        var commaIndex = value.IndexOf(',');
+        separatorIndex = Math.Max(dotIndex, commaIndex);
+        return separatorIndex > 0
+            && value.LastIndexOf('.') == dotIndex
+            && value.LastIndexOf(',') == commaIndex
+            && (dotIndex < 0 || commaIndex < 0)
+            && IsAsciiDigits(value[..separatorIndex])
+            && IsAsciiDigits(value[(separatorIndex + 1)..]);
     }
 
     private static StoryItemNumericalAudit AuditSource(StoryItemAuditSource source)
@@ -110,8 +184,18 @@ public static partial class StoryNumericalAuditor
                     == Math.Abs(evidence.Value);
             }
 
-            return string.Equals(evidence.Unit, "RATIO", StringComparison.Ordinal)
-                && token.NormalizedValue / 100m == evidence.Value;
+            if (!string.Equals(evidence.Unit, "RATIO", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var precision = GetDisplayedDecimalPrecision(token.OriginalText);
+            return precision <= 28
+                && decimal.Round(
+                    evidence.Value * 100m,
+                    precision,
+                    MidpointRounding.AwayFromZero)
+                == token.NormalizedValue;
         }
 
         if (string.Equals(evidence.Unit, "RATIO", StringComparison.Ordinal))
@@ -123,10 +207,36 @@ public static partial class StoryNumericalAuditor
             && token.NormalizedValue == evidence.Value;
     }
 
+    private static int GetDisplayedDecimalPrecision(string originalText)
+    {
+        var numericText = originalText.Trim('%');
+        var unsigned = numericText.Length > 0 && numericText[0] is '-' or '+'
+            ? numericText[1..]
+            : numericText;
+
+        if (HasSingleSeparator(unsigned, out var singleSeparatorIndex))
+        {
+            return unsigned.Length - singleSeparatorIndex - 1;
+        }
+
+        if (IsClearlyGroupedInteger(unsigned, '.')
+            || IsClearlyGroupedInteger(unsigned, ','))
+        {
+            return 0;
+        }
+
+        var separatorIndex = Math.Max(
+            unsigned.LastIndexOf('.'),
+            unsigned.LastIndexOf(','));
+        return separatorIndex < 0
+            ? 0
+            : unsigned.Length - separatorIndex - 1;
+    }
+
     private readonly record struct NumericEvidence(decimal Value, string? Unit);
 
     [GeneratedRegex(
-        @"(?<![\p{L}\p{N}_])[-+]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?%?(?![\p{L}\p{N}_])",
+        @"(?<![\p{L}\p{N}_])%?[-+]?(?:\d{1,3}(?:\.\d{3})+|\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+,\d{1,2}|\d+(?:\.\d+)?)(?:%)?(?![\p{L}\p{N}_])",
         RegexOptions.CultureInvariant)]
     private static partial Regex NumericTokenRegex();
 

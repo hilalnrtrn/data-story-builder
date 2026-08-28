@@ -32,6 +32,17 @@ public sealed class GroundedPromptBuilder
         prompt.AppendLine("Preserve required qualifications, counter-signals, associations, and missing-context limitations.");
         prompt.AppendLine("PRIMARY_CONTRIBUTOR and ASSOCIATED_SIGNAL are distinct; association is not a driver or cause.");
         prompt.AppendLine("Use concise, neutral, evidence-aware executive language.");
+        prompt.AppendLine(input.OutputLanguage switch
+        {
+            StoryGenerationLanguage.Turkish =>
+                "Write the title, executiveSummary, and every generated story item text in Turkish.",
+            StoryGenerationLanguage.English =>
+                "Write the title, executiveSummary, and every generated story item text in English.",
+            _ => throw new ArgumentException(
+                "The grounded story output language is not supported.",
+                nameof(input))
+        });
+        prompt.AppendLine("The language instruction changes only natural-language wording; preserve section order, type, sourceItemId, evidence, analytical values, qualifications, counter-signals, causality constraints, and limitations exactly.");
         prompt.AppendLine("Title and executiveSummary are wording-only and must add no new meaning.");
         prompt.AppendLine("Return only the required GeneratedExecutiveStory structure.");
         AppendJson(prompt, "STORY STRUCTURE", input.Sections);

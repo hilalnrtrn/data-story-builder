@@ -31,13 +31,15 @@ public sealed class StoryGenerationPersistenceTests
             FullAudit(day14),
             "day13-v1",
             "approved-model",
-            generatedAt);
+            generatedAt,
+            "tr");
 
         Assert.Equal(originalPlan, story.StoryPlanJson);
         Assert.Equal("Succeeded", story.GenerationStatus);
         Assert.Equal("day13-v1", story.PromptVersion);
         Assert.Equal("approved-model", story.ModelIdentifier);
         Assert.Equal(generatedAt, story.GeneratedAt);
+        Assert.Equal("tr", story.GenerationLanguage);
         Assert.Null(story.GenerationFailureReason);
         Assert.NotNull(story.GeneratedStoryJson);
         Assert.NotNull(story.StoryAuditJson);
@@ -97,6 +99,24 @@ public sealed class StoryGenerationPersistenceTests
     }
 
     [Fact]
+    public void UnsupportedGenerationLanguageIsRejectedBeforePersistence()
+    {
+        var story = ExistingStory();
+
+        Assert.Throws<ArgumentException>(() => StoryGenerationPersistence.Apply(
+            story,
+            StoryGenerationResult.Failed(
+                StoryGenerationFailure.ProviderUnavailable,
+                "Provider unavailable."),
+            null,
+            null,
+            null,
+            null,
+            null,
+            "de"));
+    }
+
+    [Fact]
     public void EfModelKeepsOneStoryPerAnalysisAndMapsGenerationColumns()
     {
         var options = new DbContextOptionsBuilder<DataStoryBuilderDbContext>()
@@ -115,6 +135,7 @@ public sealed class StoryGenerationPersistenceTests
         Assert.Equal(64, entity.FindProperty(nameof(Story.PromptVersion))!.GetMaxLength());
         Assert.Equal(128, entity.FindProperty(nameof(Story.ModelIdentifier))!.GetMaxLength());
         Assert.Equal(16, entity.FindProperty(nameof(Story.GenerationStatus))!.GetMaxLength());
+        Assert.Equal(2, entity.FindProperty(nameof(Story.GenerationLanguage))!.GetMaxLength());
         Assert.Equal(1000, entity.FindProperty(nameof(Story.GenerationFailureReason))!.GetMaxLength());
         Assert.True(entity.FindProperty(nameof(Story.GeneratedStoryJson))!.IsNullable);
         Assert.True(entity.FindProperty(nameof(Story.StoryAuditJson))!.IsNullable);
@@ -225,6 +246,7 @@ public sealed class StoryGenerationPersistenceTests
         story.PromptVersion = "day13-v1";
         story.ModelIdentifier = "approved-model";
         story.GeneratedAt = generatedAt;
+        story.GenerationLanguage = "en";
 
         var detail = AnalysisDetailPersistence.ProjectStoryGeneration(story);
 
@@ -233,6 +255,7 @@ public sealed class StoryGenerationPersistenceTests
         Assert.Equal("day13-v1", detail.PromptVersion);
         Assert.Equal("approved-model", detail.ModelIdentifier);
         Assert.Equal(generatedAt, detail.GeneratedAt);
+        Assert.Equal("en", detail.Language);
         Assert.Null(detail.FailureReason);
     }
 
@@ -240,6 +263,18 @@ public sealed class StoryGenerationPersistenceTests
     public void LegacyStoryReloadHasNoGenerationMetadata()
     {
         Assert.Null(AnalysisDetailPersistence.ProjectStoryGeneration(ExistingStory()));
+    }
+
+    [Fact]
+    public void LegacyGenerationMetadataCanBeReadWithoutLanguage()
+    {
+        var story = ExistingStory();
+        story.GenerationStatus = "Succeeded";
+
+        var detail = AnalysisDetailPersistence.ProjectStoryGeneration(story);
+
+        Assert.NotNull(detail);
+        Assert.Null(detail.Language);
     }
 
     private static Story ExistingStory() => new()

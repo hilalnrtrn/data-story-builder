@@ -20,6 +20,7 @@ public sealed class StoryGenerationPersistence(
         string? promptVersion,
         string? modelIdentifier,
         DateTimeOffset? generatedAt,
+        string? generationLanguage = null,
         CancellationToken cancellationToken = default)
     {
         var story = await dbContext.Stories.SingleAsync(
@@ -33,7 +34,8 @@ public sealed class StoryGenerationPersistence(
             fullStoryAudit,
             promptVersion,
             modelIdentifier,
-            generatedAt);
+            generatedAt,
+            generationLanguage);
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
@@ -45,13 +47,15 @@ public sealed class StoryGenerationPersistence(
         FullStoryAuditResult? fullStoryAudit,
         string? promptVersion,
         string? modelIdentifier,
-        DateTimeOffset? generatedAt)
+        DateTimeOffset? generatedAt,
+        string? generationLanguage = null)
     {
         ArgumentNullException.ThrowIfNull(story);
         ArgumentNullException.ThrowIfNull(generation);
 
         story.PromptVersion = NullIfWhiteSpace(promptVersion);
         story.ModelIdentifier = NullIfWhiteSpace(modelIdentifier);
+        story.GenerationLanguage = NormalizeLanguage(generationLanguage);
 
         if (generation.IsSuccess)
         {
@@ -83,6 +87,11 @@ public sealed class StoryGenerationPersistence(
 
     private static string? NullIfWhiteSpace(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value;
+
+    private static string? NormalizeLanguage(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? null
+            : StoryGenerationLanguage.RequireSupported(value);
 
     private static string Bound(string value) =>
         value.Length <= MaximumFailureReasonLength

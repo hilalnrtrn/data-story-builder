@@ -27,6 +27,67 @@ public sealed class StoryDataDiffNumericalIntegrationTests
         Assert.True(Assert.Single(result.NumericalAudits).Passed);
     }
 
+    [Fact]
+    public void TurkishRevenueItemPassesWithOnlyItsAuthoritativeEvidence()
+    {
+        var result = StoryDataDiffEvaluator.Evaluate(
+            Story(Section(1, "OUTCOME", Item(
+                "finding",
+                "Gelir %30 artış göstererek 1.300.000 TL'ye yükseldi (önceki dönem 1.000.000 TL)."))),
+            Input(
+                [new GroundedStorySection(1, "OUTCOME", ["finding"])],
+                [Finding(
+                    "finding",
+                    Evidence("1000000"),
+                    Evidence("1300000"),
+                    Evidence("30", "PERCENT"))],
+                []));
+
+        Assert.Equal(StoryDataDiffStatus.Pass, result.Status);
+        Assert.Empty(result.NumericalMismatches);
+        Assert.True(Assert.Single(result.NumericalAudits).Passed);
+    }
+
+    [Fact]
+    public void RoundedOnlineContributionPassesWithRatioEvidence()
+    {
+        var result = StoryDataDiffEvaluator.Evaluate(
+            Story(Section(1, "SECONDARY_FINDINGS", Item(
+                "online-contribution",
+                "Online kanal, gelir artışına 230.000 TL ekleyerek toplam artışın yaklaşık %76,7'sine katkı sağlamıştır."))),
+            Input(
+                [new GroundedStorySection(
+                    1,
+                    "SECONDARY_FINDINGS",
+                    ["online-contribution"])],
+                [Finding(
+                    "online-contribution",
+                    Evidence("230000"),
+                    Evidence("0.766667", "RATIO"))],
+                []));
+
+        Assert.Equal(StoryDataDiffStatus.Pass, result.Status);
+        Assert.Empty(result.NumericalMismatches);
+        var audit = Assert.Single(result.NumericalAudits);
+        Assert.True(audit.Passed);
+        Assert.Empty(audit.UnsupportedTokens);
+        Assert.Equal(2, audit.ExtractedTokens.Count);
+    }
+
+    [Theory]
+    [InlineData("%76,8")]
+    [InlineData("%75")]
+    public void IncorrectRoundedOnlineContributionStillFails(string generatedText)
+    {
+        var result = EvaluateFinding(
+            generatedText,
+            Evidence("0.766667", "RATIO"));
+
+        Assert.Equal(StoryDataDiffStatus.Fail, result.Status);
+        Assert.Single(result.NumericalMismatches);
+        Assert.False(Assert.Single(result.NumericalAudits).Passed);
+    }
+
     [Theory]
     [InlineData("32%", "30", "PERCENT", "32%")]
     [InlineData("decline of 20%", "-15", "PERCENT", "20%")]

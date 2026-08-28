@@ -241,7 +241,8 @@ public sealed class AnalysisDetailPersistence(
             && story.PromptVersion is null
             && story.ModelIdentifier is null
             && story.GeneratedAt is null
-            && story.GenerationFailureReason is null)
+            && story.GenerationFailureReason is null
+            && story.GenerationLanguage is null)
         {
             return null;
         }
@@ -251,7 +252,8 @@ public sealed class AnalysisDetailPersistence(
             story.PromptVersion,
             story.ModelIdentifier,
             story.GeneratedAt,
-            story.GenerationFailureReason);
+            story.GenerationFailureReason,
+            story.GenerationLanguage);
     }
 
     public static JsonElement? ProjectStoryAudit(
@@ -315,7 +317,8 @@ public sealed record AnalysisStoryGenerationDetail(
     string? PromptVersion,
     string? ModelIdentifier,
     DateTimeOffset? GeneratedAt,
-    string? FailureReason);
+    string? FailureReason,
+    string? Language);
 
 public sealed record AnalysisInsightDetail(
     string Id,

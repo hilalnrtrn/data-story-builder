@@ -7,9 +7,40 @@ namespace DataStoryBuilder.Application.Tests.Stories;
 public sealed class StoryNumericalAuditorTests
 {
     [Theory]
+    [InlineData("Revenue reached 1.300.000 TL.", "1.300.000", "1300000", false)]
+    [InlineData("Previous revenue was 1.000.000 TL.", "1.000.000", "1000000", false)]
+    [InlineData("Marmara contributed 210.000 TL.", "210.000", "210000", false)]
+    [InlineData("Smart Watch revenue was 145.000 TL.", "145.000", "145000", false)]
+    [InlineData("Gelir %30 arttı.", "%30", "30", true)]
+    [InlineData("Müşteriler %12 azaldı.", "%12", "12", true)]
+    [InlineData("Marmara katkısı %70 oldu.", "%70", "70", true)]
+    [InlineData("Oran 30,5 seviyesine ulaştı.", "30,5", "30.5", false)]
+    [InlineData("Revenue reached 1,300,000.", "1,300,000", "1300000", false)]
+    [InlineData("Revenue increased 30%.", "30%", "30", true)]
+    [InlineData("Revenue reached 1300000.", "1300000", "1300000", false)]
+    public void ExtractTokensSupportsLocalizedAndInvariantForms(
+        string text,
+        string original,
+        string normalized,
+        bool isPercent)
+    {
+        var token = Assert.Single(StoryNumericalAuditor.ExtractTokens(text));
+
+        Assert.Equal(original, token.OriginalText);
+        Assert.Equal(decimal.Parse(normalized, System.Globalization.CultureInfo.InvariantCulture), token.NormalizedValue);
+        Assert.Equal(isPercent, token.IsPercent);
+    }
+
+    [Theory]
     [InlineData("30%", "30", "PERCENT")]
     [InlineData("12%", "-12", "PERCENT")]
     [InlineData("70%", "0.70", "RATIO")]
+    [InlineData("%70", "0.70", "RATIO")]
+    [InlineData("76.7%", "0.766667", "RATIO")]
+    [InlineData("%76,7", "0.766667", "RATIO")]
+    [InlineData("76.67%", "0.766667", "RATIO")]
+    [InlineData("%76,67", "0.766667", "RATIO")]
+    [InlineData("76.667%", "0.766667", "RATIO")]
     [InlineData("0.70", "0.70", "RATIO")]
     [InlineData("1,300,000", "1300000", null)]
     [InlineData("1300000", "1300000", null)]
@@ -31,6 +62,10 @@ public sealed class StoryNumericalAuditorTests
     [InlineData("32%", "30", "PERCENT")]
     [InlineData("10%", "-12", "PERCENT")]
     [InlineData("75%", "0.70", "RATIO")]
+    [InlineData("76.8%", "0.766667", "RATIO")]
+    [InlineData("%76,8", "0.766667", "RATIO")]
+    [InlineData("%75", "0.766667", "RATIO")]
+    [InlineData("76%", "0.766667", "RATIO")]
     [InlineData("1,500,000", "1300000", null)]
     [InlineData("30", "30", "PERCENT")]
     public void UnsupportedFormsAreRetainedAsMismatches(
@@ -58,6 +93,35 @@ public sealed class StoryNumericalAuditorTests
 
         Assert.True(audit.Passed);
         Assert.Equal(4, audit.ExtractedTokens.Count);
+    }
+
+    [Fact]
+    public void TurkishRevenueSentenceMatchesAuthoritativeEvidence()
+    {
+        var audit = Audit(
+            "Gelir %30 artış göstererek 1.300.000 TL'ye yükseldi (önceki dönem 1.000.000 TL).",
+            Evidence("PREVIOUS_PERIOD_VALUE", "1000000"),
+            Evidence("CURRENT_PERIOD_VALUE", "1300000"),
+            Evidence("PERCENTAGE_CHANGE", "30", "PERCENT"));
+
+        Assert.True(audit.Passed);
+        Assert.Empty(audit.UnsupportedTokens);
+        Assert.Equal(3, audit.ExtractedTokens.Count);
+    }
+
+    [Theory]
+    [InlineData("30%", "32", "PERCENT")]
+    [InlineData("1.300.000", "1200000", null)]
+    [InlineData("%30", "25", "PERCENT")]
+    public void LocalizedFormsDoNotWeakenAuthoritativeMatching(
+        string token,
+        string evidenceValue,
+        string? unit)
+    {
+        var audit = Audit(token, Evidence("VALUE", evidenceValue, unit));
+
+        Assert.False(audit.Passed);
+        Assert.Single(audit.UnsupportedTokens);
     }
 
     [Fact]

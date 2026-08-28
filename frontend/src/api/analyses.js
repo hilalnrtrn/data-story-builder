@@ -33,9 +33,10 @@ const createResponseError = async (response) => {
   })
 }
 
-export async function uploadAnalysis(file) {
+export async function uploadAnalysis(file, language) {
   const formData = new FormData()
   formData.append('file', file)
+  formData.append('language', language)
 
   let response
 
@@ -120,5 +121,61 @@ export async function getAnalysisHistory() {
     throw new AnalysisApiError('', { status: response.status })
   }
 
+  return body
+}
+
+export async function getAnalysisHypotheses(analysisId) {
+  const normalizedId = getNonEmptyString(analysisId)
+  if (!normalizedId) throw new AnalysisApiError('')
+
+  let response
+  try {
+    response = await fetch(`${getApiBaseUrl()}/api/analyses/${encodeURIComponent(normalizedId)}/hypotheses`)
+  } catch {
+    throw new AnalysisApiError('', { analysisId: normalizedId })
+  }
+
+  if (!response.ok) {
+    const error = await createResponseError(response)
+    error.analysisId ||= normalizedId
+    throw error
+  }
+
+  const body = await readJson(response)
+  if (!Array.isArray(body)) {
+    throw new AnalysisApiError('', { status: response.status, analysisId: normalizedId })
+  }
+  return body
+}
+
+export async function updateHypothesisStatus(analysisId, hypothesisId, status) {
+  const normalizedAnalysisId = getNonEmptyString(analysisId)
+  const normalizedHypothesisId = getNonEmptyString(hypothesisId)
+  const normalizedStatus = getNonEmptyString(status)
+  if (!normalizedAnalysisId || !normalizedHypothesisId || !normalizedStatus) {
+    throw new AnalysisApiError('', { analysisId: normalizedAnalysisId })
+  }
+
+  let response
+  try {
+    response = await fetch(`${getApiBaseUrl()}/api/analyses/${encodeURIComponent(normalizedAnalysisId)}/hypotheses/${encodeURIComponent(normalizedHypothesisId)}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: normalizedStatus }),
+    })
+  } catch {
+    throw new AnalysisApiError('', { analysisId: normalizedAnalysisId })
+  }
+
+  if (!response.ok) {
+    const error = await createResponseError(response)
+    error.analysisId ||= normalizedAnalysisId
+    throw error
+  }
+
+  const body = await readJson(response)
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new AnalysisApiError('', { status: response.status, analysisId: normalizedAnalysisId })
+  }
   return body
 }

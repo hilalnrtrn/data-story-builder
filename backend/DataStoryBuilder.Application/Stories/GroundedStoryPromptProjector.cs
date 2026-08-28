@@ -14,8 +14,12 @@ public static class GroundedStoryPromptProjector
         "risks"
     ];
 
-    public static GroundedStoryPromptInput Create(JsonElement analyticsResponse)
+    public static GroundedStoryPromptInput Create(
+        JsonElement analyticsResponse,
+        string outputLanguage = StoryGenerationLanguage.Default)
     {
+        var normalizedLanguage = StoryGenerationLanguage.RequireSupported(
+            outputLanguage);
         RequireObject(analyticsResponse, "analytics response");
         var storyPlan = GetObject(analyticsResponse, "storyPlan");
         var itemLookup = BuildStoryItemLookup(storyPlan);
@@ -95,7 +99,8 @@ public static class GroundedStoryPromptProjector
             findings.ToArray(),
             constraints,
             limitations.ToArray(),
-            GetBoolean(storyPlan, "interpretationLimited"));
+            GetBoolean(storyPlan, "interpretationLimited"),
+            normalizedLanguage);
     }
 
     private static Dictionary<string, JsonElement> BuildStoryItemLookup(

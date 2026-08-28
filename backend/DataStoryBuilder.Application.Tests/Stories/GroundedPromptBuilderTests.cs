@@ -135,6 +135,23 @@ public sealed class GroundedPromptBuilderTests
         Assert.Contains("association is not a driver or cause", prompt);
     }
 
+    [Theory]
+    [InlineData("tr", "in Turkish")]
+    [InlineData("en", "in English")]
+    public void PromptRequiresRequestedOutputLanguage(
+        string language,
+        string expectedInstruction)
+    {
+        var input = Project(language);
+        var prompt = new GroundedPromptBuilder().Build(input);
+
+        Assert.Equal(language, input.OutputLanguage);
+        Assert.Contains(expectedInstruction, prompt);
+        Assert.Contains("Do not analyze data", prompt);
+        Assert.Contains("Do not introduce new numerical values", prompt);
+        Assert.Contains("preserve section order, type, sourceItemId, evidence", prompt);
+    }
+
     [Fact]
     public void PromptIsDeterministic()
     {
@@ -192,10 +209,13 @@ public sealed class GroundedPromptBuilderTests
         Assert.Contains("\"sourceItemId\"", json);
     }
 
-    private static GroundedStoryPromptInput Project()
+    private static GroundedStoryPromptInput Project(
+        string outputLanguage = StoryGenerationLanguage.Default)
     {
         using var document = ParseResponse();
-        return GroundedStoryPromptProjector.Create(document.RootElement);
+        return GroundedStoryPromptProjector.Create(
+            document.RootElement,
+            outputLanguage);
     }
 
     private static JsonDocument ParseResponse(Func<string, string>? transform = null)

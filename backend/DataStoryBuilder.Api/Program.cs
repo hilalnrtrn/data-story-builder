@@ -259,6 +259,17 @@ app.MapPost("/api/analyses", async (
 
     var form = await request.ReadFormAsync();
     var file = form.Files.GetFile("file");
+    var requestedLanguage = form["language"].FirstOrDefault();
+
+    if (!StoryGenerationLanguage.TryNormalize(
+            requestedLanguage,
+            out var generationLanguage))
+    {
+        return Results.BadRequest(new
+        {
+            error = "Language must be 'en' or 'tr'."
+        });
+    }
 
     if (file is null)
     {
@@ -461,6 +472,7 @@ app.MapPost("/api/analyses", async (
             generatedStoryResult =
                 await storyGeneration.GenerateAndComposeAsync(
                     responseBody,
+                    generationLanguage,
                     cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -494,6 +506,7 @@ app.MapPost("/api/analyses", async (
                     generatedStoryResult.PromptVersion,
                     generatedStoryResult.ModelIdentifier,
                     generatedStoryResult.GeneratedAt,
+                    generatedStoryResult.GenerationLanguage,
                     cancellationToken);
 
                 await storyTransaction.CommitAsync(cancellationToken);
@@ -573,6 +586,7 @@ app.Run();
 public sealed class AnalysisUploadRequest
 {
     public IFormFile File { get; set; } = default!;
+    public string? Language { get; set; }
 }
 
 public sealed record HypothesisStatusUpdateRequest(string? Status);

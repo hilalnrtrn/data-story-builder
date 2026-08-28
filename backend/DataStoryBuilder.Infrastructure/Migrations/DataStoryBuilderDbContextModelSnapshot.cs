@@ -653,6 +653,11 @@ namespace DataStoryBuilder.Infrastructure.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("generation_failure_reason");
 
+                    b.Property<string>("GenerationLanguage")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("generation_language");
+
                     b.Property<string>("GenerationStatus")
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")

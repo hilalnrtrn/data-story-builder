@@ -9,7 +9,8 @@ public sealed record GroundedStoryPromptInput(
     IReadOnlyList<GroundedStoryFinding> Findings,
     IReadOnlyList<GroundedCausalityConstraint> CausalityConstraints,
     IReadOnlyList<GroundedStoryLimitation> Limitations,
-    bool InterpretationLimited = false);
+    bool InterpretationLimited = false,
+    string OutputLanguage = StoryGenerationLanguage.Default);
 
 public sealed record GroundedStorySection(
     int Order,

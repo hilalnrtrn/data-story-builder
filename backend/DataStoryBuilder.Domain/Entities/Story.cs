@@ -15,4 +15,5 @@ public class Story
     public DateTimeOffset? GeneratedAt { get; set; }
     public string? GenerationStatus { get; set; }
     public string? GenerationFailureReason { get; set; }
+    public string? GenerationLanguage { get; set; }
 }
