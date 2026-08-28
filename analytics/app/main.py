@@ -19,6 +19,7 @@ from app.services.semantic_roles import detect_semantic_roles
 from app.services.insight_engine import generate_insights
 from app.services.story_planner import build_story_plan
 from app.services.hypothesis_tracker import track_hypotheses
+from app.services.overview_chart_data import build_overview_chart_data
 
 
 
@@ -53,6 +54,10 @@ async def prepare_uploaded_dataset(
         )
 
         dataset_profile = profile_dataset(
+            prepared_dataframe
+        )
+
+        overview_charts = build_overview_chart_data(
             prepared_dataframe
         )
 
@@ -131,6 +136,7 @@ async def prepare_uploaded_dataset(
            "preparedSchema": prepared_schema,
            "preparationReport": preparation_report,
            "datasetProfile": dataset_profile,
+           "overviewCharts": overview_charts,
            "semanticRoles": semantic_roles,
            "integrity": integrity,
            "dataQuality": data_quality,

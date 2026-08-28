@@ -45,22 +45,7 @@ public sealed class AnalysisProfilePersistence(
             dataQualityScore = score.GetDouble();
         }
 
-        var profileJson = JsonSerializer.Serialize(
-            new Dictionary<string, JsonElement>
-            {
-                ["rawSchema"] = GetRequiredObject(root, "rawSchema"),
-                ["preparedSchema"] = preparedSchema,
-                ["preparationReport"] = GetRequiredObject(
-                    root,
-                    "preparationReport"),
-                ["datasetProfile"] = GetRequiredObject(
-                    root,
-                    "datasetProfile"),
-                ["semanticRoles"] = GetRequiredObject(
-                    root,
-                    "semanticRoles"),
-                ["integrity"] = GetRequiredObject(root, "integrity")
-            });
+        var profileJson = BuildProfileJson(root);
 
         var analysis = await dbContext.Analyses.SingleAsync(
             item => item.Id == analysisId,
@@ -79,6 +64,37 @@ public sealed class AnalysisProfilePersistence(
         });
 
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public static string BuildProfileJson(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            throw new JsonException(
+                "The analytics response must be a JSON object.");
+        }
+
+        return JsonSerializer.Serialize(
+            new Dictionary<string, JsonElement>
+            {
+                ["rawSchema"] = GetRequiredObject(root, "rawSchema"),
+                ["preparedSchema"] = GetRequiredObject(
+                    root,
+                    "preparedSchema"),
+                ["preparationReport"] = GetRequiredObject(
+                    root,
+                    "preparationReport"),
+                ["datasetProfile"] = GetRequiredObject(
+                    root,
+                    "datasetProfile"),
+                ["overviewCharts"] = GetRequiredObject(
+                    root,
+                    "overviewCharts"),
+                ["semanticRoles"] = GetRequiredObject(
+                    root,
+                    "semanticRoles"),
+                ["integrity"] = GetRequiredObject(root, "integrity")
+            });
     }
 
     private static JsonElement GetRequiredObject(
