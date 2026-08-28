@@ -20,12 +20,19 @@ const persistedValue = (values, preferredKey, existingKey) => {
   return null
 }
 
-function KeyMetricChangesChart({ insights, language, copy }) {
+function KeyMetricChangesChart({ insights, language, copy, theme }) {
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const numberFormatter = new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
   })
   const percentFormatter = (value) => `${numberFormatter.format(value)}%`
+  const styles = getComputedStyle(document.documentElement)
+  const brandColor = styles.getPropertyValue('--color-brand-secondary').trim()
+  const warningColor = styles.getPropertyValue('--color-warning').trim()
+  const mutedColor = styles.getPropertyValue('--color-text-muted').trim()
+  const gridColor = styles.getPropertyValue('--color-border').trim()
+  const tooltipBackground = styles.getPropertyValue('--color-surface-raised').trim()
+  const tooltipText = styles.getPropertyValue('--color-text-primary').trim()
   const usableChanges = (Array.isArray(insights) ? insights : [])
     .filter((insight) => insight?.type === 'CHANGE')
     .filter((insight) => persistedChange(insight) !== null)
@@ -44,9 +51,9 @@ function KeyMetricChangesChart({ insights, language, copy }) {
     return period ? `${insight.metric || copy.notAvailable} · ${period}` : insight.metric || copy.notAvailable
   }
   const directionColor = (direction) => {
-    if (direction === 'UP') return '#315f9d'
-    if (direction === 'DOWN') return '#a5652a'
-    return '#687386'
+    if (direction === 'UP') return brandColor
+    if (direction === 'DOWN') return warningColor
+    return mutedColor
   }
   const formatOptionalNumber = (value) => (
     Number.isFinite(value) ? numberFormatter.format(value) : copy.notAvailable
@@ -72,15 +79,24 @@ function KeyMetricChangesChart({ insights, language, copy }) {
     animation: false,
     scales: {
       x: {
-        ticks: { callback: (value) => percentFormatter(value) },
+        border: { display: false },
+        grid: { color: gridColor },
+        ticks: { color: mutedColor, font: { size: 11 }, callback: (value) => percentFormatter(value) },
       },
       y: {
         grid: { display: false },
+        border: { display: false },
+        ticks: { color: mutedColor, font: { size: 11 } },
       },
     },
     plugins: {
       legend: { display: false },
       tooltip: {
+        backgroundColor: tooltipBackground,
+        titleColor: tooltipText,
+        bodyColor: tooltipText,
+        borderColor: gridColor,
+        borderWidth: 1,
         callbacks: {
           label: (context) => `${copy.relativeChange}: ${percentFormatter(context.parsed.x)}`,
           afterLabel: (context) => {
@@ -115,7 +131,7 @@ function KeyMetricChangesChart({ insights, language, copy }) {
         {copy.summary.replace('{count}', numberFormatter.format(displayedChanges.length))}
       </p>
       <div className="chart-canvas-container key-metric-chart-canvas">
-        <Bar data={data} options={options} role="img" aria-label={copy.canvasLabel} />
+        <Bar key={theme} data={data} options={options} role="img" aria-label={copy.canvasLabel} />
       </div>
     </ChartCard>
   )

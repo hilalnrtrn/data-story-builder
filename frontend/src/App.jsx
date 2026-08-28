@@ -9,9 +9,7 @@ import AppShell from './components/layout/AppShell.jsx'
 import AnalysisHistory from './components/history/AnalysisHistory.jsx'
 import AnalysisErrorPanel from './components/feedback/AnalysisErrorPanel.jsx'
 import AnalysisProgressPanel from './components/feedback/AnalysisProgressPanel.jsx'
-import AnalysisHeader from './components/overview/AnalysisHeader.jsx'
 import DatasetHealth from './components/overview/DatasetHealth.jsx'
-import KeyFindings from './components/overview/KeyFindings.jsx'
 import PipelineSummary from './components/overview/PipelineSummary.jsx'
 import SummaryCards from './components/overview/SummaryCards.jsx'
 import DatasetDropzone from './components/upload/DatasetDropzone.jsx'
@@ -24,6 +22,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024
 const SUPPORTED_EXTENSIONS = ['csv', 'xlsx']
 
 const LANGUAGE_STORAGE_KEY = 'data-story-builder-language'
+const THEME_STORAGE_KEY = 'data-story-builder-theme'
 const ANALYSIS_SESSION_KEY = 'data-story-builder-current-analysis-id'
 
 const getInitialLanguage = () => {
@@ -46,6 +45,26 @@ const getStoredAnalysisId = () => {
   }
 }
 
+const getInitialTheme = () => {
+  let initialTheme = 'light'
+
+  try {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+    if (savedTheme === 'light' || savedTheme === 'dark') {
+      initialTheme = savedTheme
+    } else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+      initialTheme = 'dark'
+    }
+  } catch {
+    if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+      initialTheme = 'dark'
+    }
+  }
+
+  document.documentElement.dataset.theme = initialTheme
+  return initialTheme
+}
+
 const storeAnalysisId = (analysisId) => {
   try {
     sessionStorage.setItem(ANALYSIS_SESSION_KEY, analysisId)
@@ -65,6 +84,7 @@ const removeStoredAnalysisId = () => {
 function App() {
   const [initialAnalysisId] = useState(getStoredAnalysisId)
   const [language, setLanguage] = useState(getInitialLanguage)
+  const [theme, setTheme] = useState(getInitialTheme)
   const [activeSection, setActiveSection] = useState(
     initialAnalysisId ? 'overview' : 'new-analysis',
   )
@@ -117,6 +137,16 @@ function App() {
       // The selected language still applies for the current session.
     }
   }, [language])
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, theme)
+    } catch {
+      // The selected theme still applies for the current page load.
+    }
+  }, [theme])
 
   useEffect(() => {
     const fetchSystemStatus = async () => {
@@ -377,6 +407,11 @@ function App() {
     }
   }
 
+  const handleThemeChange = (nextTheme) => {
+    document.documentElement.dataset.theme = nextTheme
+    setTheme(nextTheme)
+  }
+
   const handleHistorySelection = async (analysisId) => {
     if (!analysisId || historySelectionId) return
 
@@ -575,11 +610,6 @@ function App() {
       if (currentAnalysis) {
         return (
           <div className="analysis-overview">
-            <AnalysisHeader
-              analysis={currentAnalysis}
-              language={language}
-              copy={copy.overview.header}
-            />
             <SummaryCards
               analysis={currentAnalysis}
               language={language}
@@ -589,16 +619,14 @@ function App() {
               analysis={currentAnalysis}
               language={language}
               copy={copy.overview.health}
+              findingsCopy={copy.overview.findings}
+              analysisHeaderCopy={copy.overview.header}
+              theme={theme}
             />
             <PipelineSummary
               analysis={currentAnalysis}
               language={language}
               copy={copy.overview.pipeline}
-            />
-            <KeyFindings
-              insights={currentAnalysis.insights}
-              language={language}
-              copy={copy.overview.findings}
             />
           </div>
         )
@@ -673,6 +701,10 @@ function App() {
       header={sectionHeaders[activeSection]}
       language={language}
       onLanguageChange={setLanguage}
+      theme={theme}
+      onThemeChange={handleThemeChange}
+      onNewAnalysis={() => handleSectionChange('new-analysis')}
+      analysis={activeSection === 'overview' ? currentAnalysis : null}
       copy={copy}
     >
       {renderSection()}

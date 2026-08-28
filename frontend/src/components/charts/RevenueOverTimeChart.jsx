@@ -2,7 +2,7 @@ import { Line } from 'react-chartjs-2'
 import ChartCard from './ChartCard.jsx'
 import './chartSetup.js'
 
-function RevenueOverTimeChart({ chart, language, copy }) {
+function RevenueOverTimeChart({ chart, language, copy, theme }) {
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const points = (Array.isArray(chart?.points) ? chart.points : []).filter(
     (point) => (
@@ -15,6 +15,13 @@ function RevenueOverTimeChart({ chart, language, copy }) {
   const numberFormatter = new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
   })
+  const styles = getComputedStyle(document.documentElement)
+  const brandColor = styles.getPropertyValue('--color-brand-primary').trim()
+  const brandGlow = styles.getPropertyValue('--color-brand-glow').trim()
+  const gridColor = styles.getPropertyValue('--color-border').trim()
+  const textColor = styles.getPropertyValue('--color-text-muted').trim()
+  const tooltipBackground = styles.getPropertyValue('--color-surface-raised').trim()
+  const tooltipText = styles.getPropertyValue('--color-text-primary').trim()
 
   const data = {
     labels: points.map((point) => point.period),
@@ -22,12 +29,13 @@ function RevenueOverTimeChart({ chart, language, copy }) {
       {
         label: copy.datasetLabel,
         data: points.map((point) => point.value),
-        borderColor: '#315f9d',
-        backgroundColor: '#315f9d',
-        borderWidth: 2,
-        pointRadius: 3,
+        borderColor: brandColor,
+        backgroundColor: brandGlow,
+        fill: true,
+        borderWidth: 2.25,
+        pointRadius: 2.25,
         pointHoverRadius: 5,
-        tension: 0,
+        tension: 0.3,
       },
     ],
   }
@@ -43,11 +51,16 @@ function RevenueOverTimeChart({ chart, language, copy }) {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { maxRotation: 0, autoSkip: true },
+        border: { display: false },
+        ticks: { color: textColor, maxRotation: 0, autoSkip: true, font: { size: 11 } },
       },
       y: {
         beginAtZero: true,
+        border: { display: false },
+        grid: { color: gridColor },
         ticks: {
+          color: textColor,
+          font: { size: 11 },
           callback: (value) => numberFormatter.format(value),
         },
       },
@@ -55,6 +68,11 @@ function RevenueOverTimeChart({ chart, language, copy }) {
     plugins: {
       legend: { display: false },
       tooltip: {
+        backgroundColor: tooltipBackground,
+        titleColor: tooltipText,
+        bodyColor: tooltipText,
+        borderColor: gridColor,
+        borderWidth: 1,
         callbacks: {
           label: (context) => (
             `${copy.datasetLabel}: ${numberFormatter.format(context.parsed.y)}`
@@ -75,7 +93,6 @@ function RevenueOverTimeChart({ chart, language, copy }) {
     <ChartCard
       eyebrow={copy.eyebrow}
       title={copy.title}
-      description={copy.description}
       footer={periodContext}
       isEmpty={!isReady}
       emptyTitle={copy.emptyTitle}
@@ -89,6 +106,7 @@ function RevenueOverTimeChart({ chart, language, copy }) {
       </p>
       <div className="chart-canvas-container">
         <Line
+          key={theme}
           data={data}
           options={options}
           role="img"

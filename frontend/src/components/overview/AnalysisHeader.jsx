@@ -29,24 +29,17 @@ function AnalysisHeader({ analysis, language, copy }) {
   const shortenedId = analysis.id.length > 16
     ? `${analysis.id.slice(0, 8)}…${analysis.id.slice(-4)}`
     : analysis.id
-  const statusLabel = copy.statuses[analysis.status] || analysis.status || copy.notAvailable
-  const statusClass = analysis.status === 'Completed'
-    ? 'healthy'
-    : analysis.status === 'Failed'
-      ? 'unhealthy'
-      : 'warning'
-
   return (
     <section className="overview-analysis-header" aria-labelledby="analysis-summary-title">
       <div className="overview-analysis-heading">
         <div>
           <p className="eyebrow">{copy.eyebrow}</p>
-          <h2 id="analysis-summary-title">{analysis.fileName || copy.notAvailable}</h2>
+          <h2 id="analysis-summary-title">{copy.detailsTitle}</h2>
         </div>
-        <span className={`status ${statusClass}`}>{statusLabel}</span>
       </div>
 
       <dl className="analysis-metadata-grid">
+        <div><dt>{copy.fileName}</dt><dd>{analysis.fileName || copy.notAvailable}</dd></div>
         <div><dt>{copy.analysisId}</dt><dd title={analysis.id}>{shortenedId}</dd></div>
         <div><dt>{copy.createdAt}</dt><dd>{formatDateTime(analysis.createdAt)}</dd></div>
         <div><dt>{copy.completedAt}</dt><dd>{formatDateTime(analysis.completedAt)}</dd></div>

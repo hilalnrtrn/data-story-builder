@@ -2,7 +2,7 @@ import { Bar } from 'react-chartjs-2'
 import ChartCard from './ChartCard.jsx'
 import './chartSetup.js'
 
-function RevenueByRegionChart({ chart, language, copy }) {
+function RevenueByRegionChart({ chart, language, copy, theme }) {
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const points = (Array.isArray(chart?.points) ? chart.points : []).filter(
     (point) => (
@@ -15,6 +15,13 @@ function RevenueByRegionChart({ chart, language, copy }) {
   const numberFormatter = new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
   })
+  const styles = getComputedStyle(document.documentElement)
+  const brandColor = styles.getPropertyValue('--color-brand-secondary').trim()
+  const borderColor = styles.getPropertyValue('--color-brand-primary').trim()
+  const gridColor = styles.getPropertyValue('--color-border').trim()
+  const textColor = styles.getPropertyValue('--color-text-muted').trim()
+  const tooltipBackground = styles.getPropertyValue('--color-surface-raised').trim()
+  const tooltipText = styles.getPropertyValue('--color-text-primary').trim()
 
   const data = {
     labels: points.map((point) => point.segment),
@@ -22,8 +29,8 @@ function RevenueByRegionChart({ chart, language, copy }) {
       {
         label: copy.datasetLabel,
         data: points.map((point) => point.value),
-        backgroundColor: '#4777ad',
-        borderColor: '#315f9d',
+        backgroundColor: brandColor,
+        borderColor,
         borderWidth: 1,
         borderRadius: 3,
       },
@@ -37,11 +44,16 @@ function RevenueByRegionChart({ chart, language, copy }) {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 },
+        border: { display: false },
+        ticks: { color: textColor, autoSkip: false, maxRotation: 45, minRotation: 0, font: { size: 11 } },
       },
       y: {
         beginAtZero: true,
+        border: { display: false },
+        grid: { color: gridColor },
         ticks: {
+          color: textColor,
+          font: { size: 11 },
           callback: (value) => numberFormatter.format(value),
         },
       },
@@ -49,6 +61,11 @@ function RevenueByRegionChart({ chart, language, copy }) {
     plugins: {
       legend: { display: false },
       tooltip: {
+        backgroundColor: tooltipBackground,
+        titleColor: tooltipText,
+        bodyColor: tooltipText,
+        borderColor: gridColor,
+        borderWidth: 1,
         callbacks: {
           label: (context) => (
             `${copy.datasetLabel}: ${numberFormatter.format(context.parsed.y)}`
@@ -80,6 +97,7 @@ function RevenueByRegionChart({ chart, language, copy }) {
       </p>
       <div className="chart-canvas-container">
         <Bar
+          key={theme}
           data={data}
           options={options}
           role="img"

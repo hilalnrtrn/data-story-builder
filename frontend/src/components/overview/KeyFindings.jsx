@@ -35,7 +35,7 @@ const primaryValueFor = (
   return null
 }
 
-function KeyFindings({ insights, language, copy }) {
+function KeyFindings({ insights, language, copy, compact = false }) {
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const persistedInsights = Array.isArray(insights) ? insights : []
   const rankedInsights = persistedInsights.filter(
@@ -67,7 +67,7 @@ function KeyFindings({ insights, language, copy }) {
 
   if (findings.length === 0) {
     return (
-      <section className="overview-section" aria-labelledby="key-findings-title">
+      <section className={`overview-section key-findings-section${compact ? ' key-findings-compact' : ''}`} aria-labelledby="key-findings-title">
         <div className="overview-section-heading">
           <p className="eyebrow">{copy.eyebrow}</p>
           <h2 id="key-findings-title">{copy.title}</h2>
@@ -81,7 +81,7 @@ function KeyFindings({ insights, language, copy }) {
   }
 
   return (
-    <section className="overview-section" aria-labelledby="key-findings-title">
+    <section className={`overview-section key-findings-section${compact ? ' key-findings-compact' : ''}`} aria-labelledby="key-findings-title">
       <div className="overview-section-heading">
         <p className="eyebrow">{copy.eyebrow}</p>
         <h2 id="key-findings-title">{copy.title}</h2>
@@ -107,12 +107,49 @@ function KeyFindings({ insights, language, copy }) {
           const period = formatPeriod(finding.period)
           const context = [finding.dimension, finding.segment].filter(Boolean)
           const direction = copy.directions[finding.direction] || finding.direction
+          const directionValueClass = finding.direction === 'UP'
+            ? 'finding-value-up'
+            : finding.direction === 'DOWN'
+              ? 'finding-value-down'
+              : 'finding-value-neutral'
           const scoreItems = [
             [copy.confidence, formatScore(finding.confidence)],
             [copy.importance, formatScore(finding.importance)],
             [copy.businessRelevance, formatScore(finding.businessRelevance)],
           ].filter(([, value]) => value !== null)
           const displayOrdinal = finding.rank ?? index + 1
+
+          if (compact) {
+            return (
+              <li className="key-finding-card" key={finding.id}>
+                <div
+                  className="finding-rank"
+                  aria-label={`${finding.rank ? copy.rank : copy.ordinal} ${displayOrdinal}`}
+                >
+                  #{displayOrdinal}
+                </div>
+                <div className="finding-compact-identity">
+                  <h3>{finding.metric || copy.notAvailable}</h3>
+                  {(period || context.length > 0 || direction) && (
+                    <p className="finding-context">
+                      {[period, ...context, direction].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                </div>
+                <div className="finding-compact-result">
+                  <span className={`status ${priorityClass}`}>{priorityLabel}</span>
+                  {primaryValue && (
+                    <strong
+                      className={directionValueClass}
+                      title={`${primaryValue.label}: ${primaryValue.value}`}
+                    >
+                      {primaryValue.value}
+                    </strong>
+                  )}
+                </div>
+              </li>
+            )
+          }
 
           return (
             <li className="key-finding-card" key={finding.id}>
@@ -142,7 +179,7 @@ function KeyFindings({ insights, language, copy }) {
                 {primaryValue && (
                   <div className="finding-primary-value">
                     <span>{primaryValue.label}</span>
-                    <strong>{primaryValue.value}</strong>
+                    <strong className={directionValueClass}>{primaryValue.value}</strong>
                   </div>
                 )}
 

@@ -1,8 +1,10 @@
 import RevenueOverTimeChart from '../charts/RevenueOverTimeChart.jsx'
 import RevenueByRegionChart from '../charts/RevenueByRegionChart.jsx'
 import KeyMetricChangesChart from '../charts/KeyMetricChangesChart.jsx'
+import KeyFindings from './KeyFindings.jsx'
+import AnalysisHeader from './AnalysisHeader.jsx'
 
-function DatasetHealth({ analysis, language, copy }) {
+function DatasetHealth({ analysis, language, copy, findingsCopy, analysisHeaderCopy, theme }) {
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const preparation = analysis.profile?.preparationReport
   const integrity = analysis.profile?.integrity
@@ -41,9 +43,76 @@ function DatasetHealth({ analysis, language, copy }) {
     [copy.numericConversions, preparation?.numericConversions],
     [copy.dateErrors, preparation?.dateConversionErrors],
   ]
+  const qualityScore = typeof quality?.score === 'number' && Number.isFinite(quality.score)
+    ? quality.score
+    : null
+  const qualityProgress = qualityScore !== null && qualityScore >= 0 && qualityScore <= 100
+    ? qualityScore
+    : 0
+  const qualityTone = integrity?.status === 'PASS'
+    ? 'quality-donut-success'
+    : integrity?.status === 'WARNING'
+      ? 'quality-donut-warning'
+      : integrity?.status === 'FAILED' || integrity?.status === 'FAIL'
+        ? 'quality-donut-danger'
+        : 'quality-donut-neutral'
 
   return (
     <>
+      <div className="overview-hero-grid">
+        <div className="overview-hero-revenue">
+          <RevenueOverTimeChart
+            chart={analysis.profile?.overviewCharts?.revenueOverTime}
+            language={language}
+            copy={copy.revenueOverTime}
+            theme={theme}
+          />
+        </div>
+
+        <KeyFindings
+          insights={analysis.insights}
+          language={language}
+          copy={findingsCopy}
+          compact
+        />
+
+        <article className="quality-hero-card" aria-labelledby="quality-hero-title">
+          <div className="quality-hero-heading">
+            <p className="eyebrow">{copy.eyebrow}</p>
+            <h2 id="quality-hero-title">{copy.overallQuality}</h2>
+          </div>
+          <div
+            className={`quality-donut ${qualityTone}`}
+            style={{ '--quality-progress': `${qualityProgress * 3.6}deg` }}
+            role="img"
+            aria-label={`${copy.qualityScore}: ${formatScore(qualityScore)}`}
+          >
+            <span>
+              <strong>{formatScore(qualityScore)}</strong>
+              <small>{copy.qualityScore}</small>
+            </span>
+          </div>
+          <p>{copy.qualityDescription}</p>
+          <small className="quality-basis">
+            {copy.basis}: {enumLabel(copy.basisLabels, quality?.basis)}
+          </small>
+          <dl className="quality-hero-dimensions">
+            {qualityDimensions.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{formatScore(value)}</dd>
+              </div>
+            ))}
+          </dl>
+        </article>
+      </div>
+
+      <AnalysisHeader
+        analysis={analysis}
+        language={language}
+        copy={analysisHeaderCopy}
+      />
+
       <section className="overview-section" aria-labelledby="dataset-health-title">
       <div className="overview-section-heading">
         <p className="eyebrow">{copy.eyebrow}</p>
@@ -52,35 +121,6 @@ function DatasetHealth({ analysis, language, copy }) {
       </div>
 
       <div className="dataset-health-sections">
-        <article className="dataset-health-subsection quality-subsection">
-          <div className="health-subsection-heading">
-            <h3>{copy.overallQuality}</h3>
-            <p>{copy.qualityDescription}</p>
-          </div>
-
-          <div className="quality-overview-layout">
-            <div className="quality-score-card">
-              <span>{copy.qualityScore}</span>
-              <strong>{formatScore(quality?.score)}</strong>
-              <small>
-                {copy.basis}: {enumLabel(copy.basisLabels, quality?.basis)}
-              </small>
-            </div>
-
-            <div className="quality-dimensions">
-              <p className="health-group-label">{copy.qualityDimensions}</p>
-              <dl className="health-value-grid quality-dimension-grid">
-                {qualityDimensions.map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
-                    <dd>{formatScore(value)}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-        </article>
-
         <article className="dataset-health-subsection">
           <div className="health-subsection-heading">
             <h3>{copy.preparation}</h3>
@@ -125,21 +165,18 @@ function DatasetHealth({ analysis, language, copy }) {
       </section>
 
       <div className="overview-chart-grid">
-        <RevenueOverTimeChart
-          chart={analysis.profile?.overviewCharts?.revenueOverTime}
-          language={language}
-          copy={copy.revenueOverTime}
-        />
         <RevenueByRegionChart
           chart={analysis.profile?.overviewCharts?.revenueByRegion}
           language={language}
           copy={copy.revenueByRegion}
+          theme={theme}
         />
         <div className="overview-chart-wide">
           <KeyMetricChangesChart
             insights={analysis.insights}
             language={language}
             copy={copy.keyMetricChanges}
+            theme={theme}
           />
         </div>
       </div>
