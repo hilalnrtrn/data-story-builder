@@ -9,6 +9,7 @@ import AppShell from './components/layout/AppShell.jsx'
 import AnalysisHistory from './components/history/AnalysisHistory.jsx'
 import AnalysisErrorPanel from './components/feedback/AnalysisErrorPanel.jsx'
 import AnalysisProgressPanel from './components/feedback/AnalysisProgressPanel.jsx'
+import InsightExplorer from './components/insights/InsightExplorer.jsx'
 import DatasetHealth from './components/overview/DatasetHealth.jsx'
 import PipelineSummary from './components/overview/PipelineSummary.jsx'
 import SummaryCards from './components/overview/SummaryCards.jsx'
@@ -681,6 +682,18 @@ function App() {
           copy={copy.history}
           onRetry={loadAnalysisHistory}
           onSelect={handleHistorySelection}
+        />
+      )
+    }
+
+    if (activeSection === 'insights') {
+      return (
+        <InsightExplorer
+          analysis={currentAnalysis}
+          language={language}
+          copy={copy.insightExplorer}
+          onStartAnalysis={() => handleSectionChange('new-analysis')}
+          onOpenHistory={() => handleSectionChange('history')}
         />
       )
     }
