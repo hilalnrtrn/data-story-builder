@@ -32,6 +32,7 @@ public static class FullStoryAuditor
         NarrativeBiasResult narrativeBias)
     {
         if (storyDataDiff.NumericalMismatches.Count > 0
+            || storyDataDiff.HasSemanticSafetyFailure
             || storyDataDiff.UnexpectedSourceItemIds.Count > 0
             || storyDataDiff.EvidenceCoverageScore < 1.0
             || HasFinding(

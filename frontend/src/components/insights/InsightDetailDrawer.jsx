@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { localizeAnalyticsCode, localizeAnalyticsText } from '../../i18n/analyticsText.js'
+import { InsightHero, TrustRail, WhatHappened } from './ExplainabilityFoundation.jsx'
+import { BusinessRelevanceSection, CalculationSection, EvidenceSection } from './EvidenceAndRelevance.jsx'
+import { IntegrityChallenge, RelatedFindings } from './RelationshipIntegrity.jsx'
+import { CausalityBoundary, MissingContext } from './CausalityContext.jsx'
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const isFiniteNumber = (value) => typeof value === 'number' && Number.isFinite(value)
@@ -7,8 +11,8 @@ const isFiniteNumber = (value) => typeof value === 'number' && Number.isFinite(v
 const CALCULATION_FIELDS = {
   CHANGE: ['previous', 'current', 'absoluteChange', 'percentageChange'],
   TREND: ['startValue', 'endValue', 'periodCount'],
-  ANOMALY: ['observed', 'lowerBound', 'upperBound', 'iqr'],
-  CONTRIBUTION: ['segmentAbsoluteChange', 'totalAbsoluteChange', 'contributionShare'],
+  ANOMALY: ['observed', 'lowerBound', 'upperBound', 'iqr', 'q1', 'q3'],
+  CONTRIBUTION: ['segmentPreviousValue', 'segmentCurrentValue', 'segmentAbsoluteChange', 'totalAbsoluteChange', 'contributionShare'],
   CONTRAST: ['subjectChangePercent', 'comparisonChangePercent', 'differencePercentagePoints'],
 }
 
@@ -27,15 +31,8 @@ const DETECTION_FIELDS = [
   'minimumPercentagePointGap',
 ]
 
-const EXECUTIVE_FIELDS = {
-  CHANGE: ['previous', 'current', 'absoluteChange', 'percentageChange'],
-  TREND: ['startValue', 'endValue'],
-  ANOMALY: ['observed', 'lowerBound', 'upperBound'],
-  CONTRIBUTION: ['segmentAbsoluteChange', 'contributionShare'],
-  CONTRAST: ['subjectChangePercent', 'comparisonChangePercent', 'differencePercentagePoints'],
-}
-
-function AccordionSection({ id, title, open, onToggle, children }) {
+function AccordionSection({ id, title, open, onToggle, children, hidden = false }) {
+  if (hidden) return null
   return (
     <section className="explainability-accordion">
       <h3>
@@ -67,7 +64,8 @@ function InsightDetailDrawer({
   onClose,
 }) {
   const closeButtonRef = useRef(null)
-  const [openSections, setOpenSections] = useState(() => new Set(['evidence']))
+  const dialogRef = useRef(null)
+  const [openSections, setOpenSections] = useState(() => new Set())
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
 
   useEffect(() => {
@@ -77,7 +75,29 @@ function InsightDetailDrawer({
     closeButtonRef.current?.focus()
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        onClose()
+        return
+      }
+      if (event.key !== 'Tab') return
+      const focusable = [...(dialogRef.current?.querySelectorAll(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) || [])].filter((element) => !element.hidden && element.getClientRects().length > 0)
+      if (focusable.length === 0) {
+        event.preventDefault()
+        closeButtonRef.current?.focus()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
 
@@ -95,7 +115,10 @@ function InsightDetailDrawer({
     ? `${formatNumber(value)}%`
     : copy.unavailable
   const formatRatioPercent = (value) => isFiniteNumber(value)
-    ? new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 1 }).format(value)
+    ? `${new Intl.NumberFormat(locale, {
+      style: 'percent',
+      maximumFractionDigits: 1,
+    }).formatToParts(value).filter(({ type }) => type !== 'percentSign').map(({ value: part }) => part).join('').trim()}%`
     : copy.unavailable
   const formatScore = (value) => formatRatioPercent(value)
   const localizeText = (value) => localizeAnalyticsText(value, language)
@@ -180,8 +203,9 @@ function InsightDetailDrawer({
 
   if (!insight) {
     return (
-      <div className="insight-drawer-backdrop" onMouseDown={onClose}>
+      <div className="insight-drawer-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
         <aside
+          ref={dialogRef}
           className="insight-detail-drawer"
           role="dialog"
           aria-modal="true"
@@ -203,6 +227,12 @@ function InsightDetailDrawer({
     || insight.priorityLevel
     || copy.unavailable
   const calculationRows = valueRows(CALCULATION_FIELDS[insight.type] || [])
+  const visibleDetectionRows = insight.type === 'TREND'
+    ? detectionRows.filter(({ field }) => ['slope', 'persistenceRatio'].includes(field))
+    : []
+  const methodDetailRows = detectionRows.filter(({ field }) => (
+    field !== 'method' && !visibleDetectionRows.some((row) => row.field === field)
+  ))
   const evidence = Array.isArray(insight.evidence) ? insight.evidence : []
   const relatedRelationships = (Array.isArray(relationships) ? relationships : [])
     .filter((relationship) => (
@@ -233,13 +263,6 @@ function InsightDetailDrawer({
   const priorityReasons = Array.isArray(priorityDetails?.reasons)
     ? priorityDetails.reasons.filter((reason) => typeof reason === 'string' && reason.trim())
     : []
-  const hasBusinessOverview = [
-    insight.businessRelevance,
-    insight.impactDirection,
-    insight.priorityScore,
-    insight.priorityLevel,
-    insight.rank,
-  ].some((value) => value !== null && value !== undefined && value !== '')
   const integrityEvaluation = (Array.isArray(integrityEvaluations) ? integrityEvaluations : [])
     .find((evaluation) => evaluation?.insightId === insight.id) || null
   const integrityReasons = Array.isArray(integrityEvaluation?.reasons)
@@ -299,30 +322,7 @@ function InsightDetailDrawer({
   const unknownContext = Array.isArray(contextSummary?.unknown)
     ? contextSummary.unknown.filter((item) => isObject(item))
     : []
-  const executiveRows = valueRows(EXECUTIVE_FIELDS[insight.type] || []).slice(0, 4)
   const selectedCausality = selectedCausalityEvaluations[0] || null
-  const primarySignal = (() => {
-    if (insight.type === 'CHANGE' && isFiniteNumber(insight.values?.percentageChange)) {
-      const value = insight.values.percentageChange
-      return `${value > 0 ? '↑ +' : value < 0 ? '↓ ' : '→ '}${formatScaledPercent(value)}`
-    }
-    if (insight.type === 'TREND') {
-      const symbol = insight.direction === 'UP' ? '↗' : insight.direction === 'DOWN' ? '↘' : '→'
-      return `${symbol} ${copy.directions[insight.direction] || insight.direction || copy.unavailable}`
-    }
-    if (insight.type === 'ANOMALY') return `! ${typeLabel}`
-    if (insight.type === 'CONTRIBUTION' && isFiniteNumber(insight.values?.contributionShare)) {
-      return `◆ ${formatRatioPercent(insight.values.contributionShare)} ${copy.primarySignals.contribution}`
-    }
-    if (insight.type === 'CONTRAST') {
-      if (isFiniteNumber(insight.values?.differencePercentagePoints)) {
-        const value = insight.values.differencePercentagePoints
-        return `⇄ ${value > 0 ? '+' : ''}${formatNumber(value)} ${copy.percentagePoints}`
-      }
-      return copy.comparisonResults[insight.values?.comparisonResult] || null
-    }
-    return null
-  })()
   const heroContext = [insight.segment || insight.dimension, formatPeriod(insight.period)]
     .filter(Boolean)
     .join(' · ')
@@ -330,20 +330,21 @@ function InsightDetailDrawer({
     counterEvidence.length > 0
       ? copy.considerations.counterEvidence.replace('{count}', counterEvidence.length)
       : null,
-    integrityEvaluation && integrityEvaluation.status !== 'PASS'
-      ? copy.integrityStatuses[integrityEvaluation.status] || integrityEvaluation.status
+    contradictions.length > 0
+      ? copy.considerations.contradictions.replace('{count}', contradictions.length)
       : null,
-    selectedCausality?.associationPresent === true && selectedCausality?.causalityEstablished === false
-      ? copy.considerations.causality
+    integrityEvaluation?.requiresQualification === true
+      ? copy.considerations.qualification
       : null,
-    missingContextItems.length > 0
-      ? copy.considerations.missingContext.replace('{count}', missingContextItems.length)
+    missingContextEvaluation?.interpretationLimited === true
+      ? copy.considerations.interpretationLimited
       : null,
   ].filter(Boolean).slice(0, 4)
 
   return (
-    <div className="insight-drawer-backdrop" onMouseDown={onClose}>
+    <div className="insight-drawer-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}>
       <aside
+        ref={dialogRef}
         className="insight-detail-drawer"
         role="dialog"
         aria-modal="true"
@@ -359,38 +360,31 @@ function InsightDetailDrawer({
         </header>
 
         <div className="insight-drawer-body">
-          <section className="explainability-hero" aria-label={copy.summaryTitle}>
-            <div className="explainability-hero-badges">
-              <span>{typeLabel}</span>
-              <span className={`status ${insight.priorityLevel === 'CRITICAL' ? 'unhealthy' : insight.priorityLevel === 'HIGH' ? 'warning' : 'neutral-status'}`}>{priorityLabel}</span>
-            </div>
-            <h3>{insight.metric || copy.unavailable}</h3>
-            <p>{heroContext}</p>
-            {primarySignal && <strong className="explainability-primary-signal">{primarySignal}</strong>}
-            <dl className="explainability-hero-scores">
-              <div><dt>{copy.businessPriority}</dt><dd>{formatScore(insight.priorityScore)}</dd></div>
-              <div><dt>★ {copy.importance}</dt><dd>{formatScore(insight.importance)}</dd></div>
-              <div><dt>✓ {copy.confidence}</dt><dd>{formatScore(insight.confidence)}</dd></div>
-            </dl>
-          </section>
+          <div className="fd-e-foundation-grid">
+            <InsightHero
+              insight={insight}
+              typeLabel={typeLabel}
+              priorityLabel={priorityLabel}
+              context={heroContext}
+              formatNumber={formatNumber}
+              formatRatioPercent={formatRatioPercent}
+              formatScaledPercent={formatScaledPercent}
+              copy={copy}
+            />
+            <TrustRail
+              insight={insight}
+              integrityEvaluation={integrityEvaluation}
+              selectedCausality={selectedCausality}
+              formatScore={formatScore}
+              copy={copy}
+            />
+          </div>
 
-          <section className="explainability-what-happened" aria-labelledby="what-happened-title">
-            <h3 id="what-happened-title">{copy.whatHappened}</h3>
-            {executiveRows.length > 0 ? (
-              <dl>
-                {executiveRows.map(({ field, value }) => (
-                  <div key={field}><dt>{copy.valueFields[field] || field}</dt><dd>{formatValue(field, value)}</dd></div>
-                ))}
-              </dl>
-            ) : <p className="insight-neutral-copy">{copy.notAvailableForInsight}</p>}
-          </section>
-
-          <section className="explainability-status-grid" aria-label={copy.statusSummary}>
-            <article><span aria-hidden="true">✓</span><div><h3>{copy.evidence}</h3><strong>{copy.summaryCards.evidence.replace('{count}', evidence.length)}</strong></div></article>
-            <article><span aria-hidden="true">◆</span><div><h3>{copy.businessRelevance}</h3><strong>{formatScore(insight.businessRelevance)}</strong></div></article>
-            <article><span aria-hidden="true">{!integrityEvaluation ? '—' : integrityEvaluation.status === 'FAIL' ? '×' : integrityEvaluation.status === 'PASS' ? '✓' : '!'}</span><div><h3>{copy.integrity}</h3><strong>{integrityEvaluation ? copy.integrityStatuses[integrityEvaluation.status] || integrityEvaluation.status : copy.unavailable}</strong></div></article>
-            <article><span aria-hidden="true">{!selectedCausality ? '—' : selectedCausality.causalityEstablished ? '✓' : '!'}</span><div><h3>{copy.causalityGuard}</h3><strong>{selectedCausality ? copy.causalityStatuses[selectedCausality.status] || selectedCausality.status : copy.unavailable}</strong></div></article>
-          </section>
+          <WhatHappened
+            insight={insight}
+            formatValue={formatValue}
+            copy={copy}
+          />
 
           {considerations.length > 0 && (
             <section className="explainability-considerations" aria-labelledby="considerations-title">
@@ -399,54 +393,67 @@ function InsightDetailDrawer({
             </section>
           )}
 
+          <div className="fd-e2-investigation-grid">
+            <EvidenceSection
+              evidence={evidence}
+              insight={insight}
+              localizeText={localizeText}
+              renderEvidenceValue={renderEvidenceValue}
+              renderReadableValue={renderReadableValue}
+              formatNumber={formatNumber}
+              copy={copy}
+            />
+            <CalculationSection
+              calculationRows={calculationRows}
+              visibleDetectionRows={visibleDetectionRows}
+              methodDetailRows={methodDetailRows}
+              insight={insight}
+              formatValue={formatValue}
+              copy={copy}
+            />
+          </div>
+
+          <BusinessRelevanceSection
+            insight={insight}
+            businessComponents={businessComponents}
+            businessReasons={businessReasons}
+            priorityBreakdown={priorityBreakdown}
+            priorityReasons={priorityReasons}
+            formatScore={formatScore}
+            localizeText={localizeText}
+            humanizeKey={humanizeKey}
+            copy={copy}
+          />
+
+          <RelatedFindings
+            currentInsight={insight}
+            relatedRelationships={relatedRelationships}
+            formatPeriod={formatPeriod}
+            formatScore={formatScore}
+            formatValue={formatValue}
+            localizeText={localizeText}
+            humanizeKey={humanizeKey}
+            copy={copy}
+          />
+
+          <IntegrityChallenge
+            integrityEvaluation={integrityEvaluation}
+            counterEvidence={counterEvidence}
+            contradictions={contradictions}
+            consistencyChecks={consistencyChecks}
+            relationships={Array.isArray(relationships) ? relationships : []}
+            resolveInsightSummary={resolveInsightSummary}
+            integrityReasons={integrityReasons}
+            integrityBreakdown={integrityBreakdown}
+            formatNumber={formatNumber}
+            formatRatioPercent={formatRatioPercent}
+            localizeText={localizeText}
+            humanizeKey={humanizeKey}
+            copy={copy}
+          />
+
           <div className="explainability-accordions">
-          <AccordionSection id="evidence" title={copy.accordions.evidence} open={openSections.has('evidence')} onToggle={() => toggleSection('evidence')}>
-
-          <section className="insight-drawer-section" aria-labelledby="calculation-title">
-            <h3 id="calculation-title">{copy.calculation}</h3>
-            {calculationRows.length > 0 ? (
-              <dl className="insight-detail-grid">
-                {calculationRows.map(({ field, value }) => (
-                  <div key={field}><dt>{copy.valueFields[field] || field}</dt><dd>{formatValue(field, value)}</dd></div>
-                ))}
-              </dl>
-            ) : <p className="insight-neutral-copy">{copy.noCalculation}</p>}
-
-          </section>
-
-          <section className="insight-drawer-section" aria-labelledby="evidence-title">
-            <div className="insight-section-heading-row">
-              <h3 id="evidence-title">{copy.evidence}</h3>
-              <span>{evidence.length}</span>
-            </div>
-
-            {isObject(insight.source) && (insight.source.fileName || isFiniteNumber(insight.source.rowCount)) && (
-              <dl className="insight-source-context">
-                {insight.source.fileName && <div><dt>{copy.sourceFile}</dt><dd>{insight.source.fileName}</dd></div>}
-                {isFiniteNumber(insight.source.rowCount) && <div><dt>{copy.sourceRows}</dt><dd>{formatNumber(insight.source.rowCount)}</dd></div>}
-              </dl>
-            )}
-
-            {evidence.length > 0 ? (
-              <ol className="insight-evidence-list">
-                {evidence.map((item, index) => (
-                  <li key={`${item?.code || 'evidence'}-${index}`}>
-                    <div className="insight-evidence-heading">
-                      <strong>{localizeText(item?.label) || copy.evidenceItem.replace('{number}', index + 1)}</strong>
-                      {item?.code && <code>{item.code}</code>}
-                    </div>
-                    <div className="insight-evidence-value">{renderEvidenceValue(item?.value, item?.unit)}</div>
-                    {item?.unit && <p><span>{copy.unit}:</span> {copy.units[item.unit] || humanizeKey(item.unit)}</p>}
-                    <p><span>{copy.parentMetric}:</span> {insight.metric || copy.unavailable}</p>
-                    <p><span>{copy.parentPeriod}:</span> {formatPeriod(insight.period)}</p>
-                  </li>
-                ))}
-              </ol>
-            ) : <p className="insight-neutral-copy">{copy.noEvidence}</p>}
-          </section>
-          </AccordionSection>
-
-          <AccordionSection id="relationships" title={copy.accordions.relationships} open={openSections.has('relationships')} onToggle={() => toggleSection('relationships')}>
+          <AccordionSection hidden id="relationships" title={copy.accordions.relationships} open={openSections.has('relationships')} onToggle={() => toggleSection('relationships')}>
 
           <section className="insight-drawer-section" aria-labelledby="relationships-title">
             <div className="insight-section-heading-row">
@@ -519,65 +526,9 @@ function InsightDetailDrawer({
             ) : <p className="insight-neutral-copy">{copy.noRelationships}</p>}
           </section>
 
-          <section className="insight-drawer-section" aria-labelledby="business-relevance-title">
-            <h3 id="business-relevance-title">{copy.businessRelevance}</h3>
-
-            {hasBusinessOverview ? (
-              <dl className="insight-detail-grid business-relevance-overview">
-                <div><dt>{copy.businessRelevanceScore}</dt><dd>{formatScore(insight.businessRelevance)}</dd></div>
-                <div><dt>{copy.impactDirection}</dt><dd>{copy.impactDirections[insight.impactDirection] || insight.impactDirection || copy.unavailable}</dd></div>
-                <div><dt>{copy.priorityScore}</dt><dd>{formatScore(insight.priorityScore)}</dd></div>
-                <div><dt>{copy.priorityLevel}</dt><dd>{copy.priorities[insight.priorityLevel] || insight.priorityLevel || copy.unavailable}</dd></div>
-                <div><dt>{copy.rank}</dt><dd>{Number.isInteger(insight.rank) && insight.rank > 0 ? `#${insight.rank}` : copy.unavailable}</dd></div>
-              </dl>
-            ) : <p className="insight-neutral-copy">{copy.noBusinessRelevance}</p>}
-
-            {businessComponents.length > 0 && (
-              <div className="business-detail-group">
-                <h4>{copy.relevanceComponents}</h4>
-                <div className="business-component-list">
-                  {businessComponents.map((component, index) => (
-                    <article key={`${component.name || 'component'}-${index}`}>
-                      <div>
-                        <strong>{copy.componentNames[component.name] || humanizeKey(component.name || copy.component)}</strong>
-                        <span>{formatScore(component.score)}</span>
-                      </div>
-                      {typeof component.reason === 'string' && component.reason.trim() && <p>{localizeText(component.reason)}</p>}
-                    </article>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {businessReasons.length > 0 && (
-              <div className="persisted-reason-group business-detail-group">
-                <h4>{copy.businessReasons}</h4>
-                <ul>{businessReasons.map((reason, index) => <li key={index}>{localizeText(reason)}</li>)}</ul>
-              </div>
-            )}
-
-            {(priorityBreakdown.length > 0 || priorityReasons.length > 0) && (
-              <div className="business-detail-group priority-detail-group">
-                <h4>{copy.priorityDetails}</h4>
-                {priorityBreakdown.length > 0 && (
-                  <dl className="insight-detail-grid">
-                    {priorityBreakdown.map(([key, value]) => (
-                      <div key={key}><dt>{copy.priorityBreakdownFields[key] || humanizeKey(key)}</dt><dd>{formatScore(value)}</dd></div>
-                    ))}
-                  </dl>
-                )}
-                {priorityReasons.length > 0 && (
-                  <div className="persisted-reason-group">
-                    <h4>{copy.priorityReasons}</h4>
-                    <ul>{priorityReasons.map((reason, index) => <li key={index}>{localizeText(reason)}</li>)}</ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </section>
           </AccordionSection>
 
-          <AccordionSection id="integrity" title={copy.accordions.integrity} open={openSections.has('integrity')} onToggle={() => toggleSection('integrity')}>
+          <AccordionSection hidden id="integrity" title={copy.accordions.integrity} open={openSections.has('integrity')} onToggle={() => toggleSection('integrity')}>
 
           <section className="insight-drawer-section integrity-detail-section" aria-labelledby="integrity-detail-title">
             <h3 id="integrity-detail-title">{copy.integrity}</h3>
@@ -727,7 +678,10 @@ function InsightDetailDrawer({
           </section>
           </AccordionSection>
 
-          <AccordionSection id="limitations" title={copy.accordions.limitations} open={openSections.has('limitations')} onToggle={() => toggleSection('limitations')}>
+          <CausalityBoundary evaluations={selectedCausalityEvaluations} relationships={Array.isArray(relationships) ? relationships : []} formatScore={formatScore} humanizeKey={humanizeKey} localizeText={localizeText} copy={copy} />
+          <MissingContext evaluation={missingContextEvaluation} items={missingContextItems} reasons={missingContextReasons} knownContext={knownContext} unknownContext={unknownContext} language={language} humanizeKey={humanizeKey} localizeText={localizeText} localizeAnalyticsCode={localizeAnalyticsCode} copy={copy} />
+
+          <AccordionSection hidden id="limitations" title={copy.accordions.limitations} open={openSections.has('limitations')} onToggle={() => toggleSection('limitations')}>
 
           <section className="insight-drawer-section" aria-labelledby="causality-guard-title">
             <div className="insight-section-heading-row">
@@ -886,22 +840,6 @@ function InsightDetailDrawer({
                 <div><dt>{copy.direction}</dt><dd>{copy.directions[insight.direction] || insight.direction || copy.unavailable}</dd></div>
                 <div><dt>{copy.rank}</dt><dd>{Number.isInteger(insight.rank) && insight.rank > 0 ? `#${insight.rank}` : copy.unavailable}</dd></div>
               </dl>
-              {detectionRows.length > 0 && (
-                <div className="insight-detection-details">
-                  <h4>{copy.detectionDetails}</h4>
-                  <dl className="insight-detail-grid">
-                    {detectionRows.map(({ field, value }) => (
-                      <div key={field}><dt>{copy.detectionFields[field] || field}</dt><dd>{formatValue(field, value)}</dd></div>
-                    ))}
-                  </dl>
-                </div>
-              )}
-              {isObject(insight.source) && (
-                <dl className="insight-source-context">
-                  {insight.source.fileName && <div><dt>{copy.sourceFile}</dt><dd>{insight.source.fileName}</dd></div>}
-                  {isFiniteNumber(insight.source.rowCount) && <div><dt>{copy.sourceRows}</dt><dd>{formatNumber(insight.source.rowCount)}</dd></div>}
-                </dl>
-              )}
             </section>
           </AccordionSection>
           </div>

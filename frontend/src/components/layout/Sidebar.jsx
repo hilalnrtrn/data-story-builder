@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react'
+
 const navigationItems = [
   { id: 'overview', labelKey: 'overview', icon: 'overview' },
   { id: 'insights', labelKey: 'insights', icon: 'insights' },
@@ -33,9 +35,50 @@ const NavIcon = ({ name }) => {
   )
 }
 
-function Sidebar({ activeSection, onSectionChange, copy }) {
+function Sidebar({
+  activeSection,
+  onSectionChange,
+  onNewAnalysis,
+  onDismiss,
+  mobileOpen,
+  navigationRef,
+  copy,
+}) {
+  const [mobileViewport, setMobileViewport] = useState(false)
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 900px)')
+    const updateViewport = () => setMobileViewport(query.matches)
+    updateViewport()
+    query.addEventListener('change', updateViewport)
+    return () => query.removeEventListener('change', updateViewport)
+  }, [])
+
+  const primaryItems = navigationItems.filter((item) => item.id !== 'history')
+  const utilityItems = navigationItems.filter((item) => item.id === 'history')
+  const renderNavigationItem = (item) => (
+    <button
+      key={item.id}
+      type="button"
+      className="navigation-item"
+      aria-current={activeSection === item.id ? 'page' : undefined}
+      title={copy.navigation[item.labelKey]}
+      onClick={() => onSectionChange(item.id)}
+    >
+      <NavIcon name={item.icon} />
+      <span>{copy.navigation[item.labelKey]}</span>
+    </button>
+  )
+
   return (
-    <aside className="sidebar" aria-label={copy.shell.applicationNavigation}>
+    <aside
+      ref={navigationRef}
+      id="application-sidebar"
+      className={`sidebar${mobileOpen ? ' is-mobile-open' : ''}`}
+      aria-label={copy.shell.applicationNavigation}
+      aria-hidden={mobileViewport && !mobileOpen ? 'true' : undefined}
+      inert={mobileViewport && !mobileOpen ? true : undefined}
+    >
       <div className="brand-block" aria-label="Data Story Builder">
         <span className="brand-mark" aria-hidden="true">
           <span className="brand-symbol">
@@ -46,23 +89,35 @@ function Sidebar({ activeSection, onSectionChange, copy }) {
             <span className="brand-builder">Builder</span>
           </span>
         </span>
+        <button
+          type="button"
+          className="sidebar-mobile-close"
+          aria-label={copy.shell.closeNavigation}
+          onClick={onDismiss}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
       </div>
+
+      <button
+        type="button"
+        className="sidebar-new-analysis"
+        aria-current={activeSection === 'new-analysis' ? 'page' : undefined}
+        aria-label={copy.shell.newAnalysis}
+        title={copy.shell.newAnalysis}
+        onClick={onNewAnalysis}
+      >
+        <span aria-hidden="true">+</span>
+        <span>{copy.shell.newAnalysis}</span>
+      </button>
 
       <nav className="primary-navigation" aria-label={copy.shell.workspaceNavigation}>
         <p className="navigation-label">{copy.shell.workspace}</p>
+        {primaryItems.map(renderNavigationItem)}
 
-        {navigationItems.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className="navigation-item"
-            aria-current={activeSection === item.id ? 'page' : undefined}
-            onClick={() => onSectionChange(item.id)}
-          >
-            <NavIcon name={item.icon} />
-            <span>{copy.navigation[item.labelKey]}</span>
-          </button>
-        ))}
+        <div className="navigation-utility-group">
+          {utilityItems.map(renderNavigationItem)}
+        </div>
       </nav>
 
       <div className="sidebar-note">

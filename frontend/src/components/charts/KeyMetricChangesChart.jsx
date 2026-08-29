@@ -28,7 +28,7 @@ function KeyMetricChangesChart({ insights, language, copy, theme }) {
   const percentFormatter = (value) => `${numberFormatter.format(value)}%`
   const styles = getComputedStyle(document.documentElement)
   const brandColor = styles.getPropertyValue('--color-brand-secondary').trim()
-  const warningColor = styles.getPropertyValue('--color-warning').trim()
+  const downColor = styles.getPropertyValue('--direction-down').trim()
   const mutedColor = styles.getPropertyValue('--color-text-muted').trim()
   const gridColor = styles.getPropertyValue('--color-border').trim()
   const tooltipBackground = styles.getPropertyValue('--color-surface-raised').trim()
@@ -52,7 +52,7 @@ function KeyMetricChangesChart({ insights, language, copy, theme }) {
   }
   const directionColor = (direction) => {
     if (direction === 'UP') return brandColor
-    if (direction === 'DOWN') return warningColor
+    if (direction === 'DOWN') return downColor
     return mutedColor
   }
   const formatOptionalNumber = (value) => (
@@ -81,12 +81,12 @@ function KeyMetricChangesChart({ insights, language, copy, theme }) {
       x: {
         border: { display: false },
         grid: { color: gridColor },
-        ticks: { color: mutedColor, font: { size: 11 }, callback: (value) => percentFormatter(value) },
+        ticks: { color: mutedColor, font: { size: 12 }, callback: (value) => percentFormatter(value) },
       },
       y: {
         grid: { display: false },
         border: { display: false },
-        ticks: { color: mutedColor, font: { size: 11 } },
+        ticks: { color: mutedColor, font: { size: 12 } },
       },
     },
     plugins: {
@@ -119,15 +119,13 @@ function KeyMetricChangesChart({ insights, language, copy, theme }) {
 
   return (
     <ChartCard
-      eyebrow={copy.eyebrow}
       title={copy.title}
-      description={copy.description}
       footer={isReady ? copy.footer.replace('{count}', numberFormatter.format(displayedChanges.length)) : null}
       isEmpty={!isReady}
       emptyTitle={copy.emptyTitle}
       emptyDescription={copy.emptyDescription}
     >
-      <p className="chart-text-summary">
+      <p className="chart-text-summary visually-hidden-chart-summary">
         {copy.summary.replace('{count}', numberFormatter.format(displayedChanges.length))}
       </p>
       <div className="chart-canvas-container key-metric-chart-canvas">

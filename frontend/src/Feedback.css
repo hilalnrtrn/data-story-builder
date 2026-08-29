@@ -1,0 +1,146 @@
+:root {
+  --feedback-fast: 140ms;
+  --feedback-normal: 200ms;
+  --feedback-slow: 280ms;
+  --feedback-focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-focus) 34%, transparent);
+}
+
+.state-panel {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: .9rem;
+  color: var(--text-primary);
+}
+
+.state-panel.state-page {
+  min-height: 18rem;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  text-align: center;
+}
+
+.state-panel.state-panel {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--surface-primary);
+}
+
+.state-panel.state-inline {
+  width: 100%;
+  min-height: 8rem;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--text-secondary);
+  background: var(--surface-soft);
+}
+
+.state-panel-icon {
+  position: relative;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--surface-primary);
+}
+
+.state-panel.state-empty .state-panel-icon::before,
+.state-panel.state-unavailable .state-panel-icon::before {
+  position: absolute;
+  top: 50%;
+  right: .48rem;
+  left: .48rem;
+  height: 1px;
+  background: var(--text-muted);
+  content: '';
+}
+
+.state-panel.state-unavailable .state-panel-icon { border-color: color-mix(in srgb, var(--state-info) 35%, var(--border-default)); }
+.state-panel.state-error { border-color: color-mix(in srgb, var(--state-danger) 30%, var(--border-default)); background: color-mix(in srgb, var(--state-danger-soft) 54%, var(--surface-primary)); }
+.state-panel.state-loading { border-color: color-mix(in srgb, var(--brand-primary) 24%, var(--border-default)); background: color-mix(in srgb, var(--brand-soft) 35%, var(--surface-primary)); }
+
+.state-panel-content { min-width: 0; }
+.state-panel-content h3,
+.state-panel-content p { margin: 0; }
+.state-panel-content h3 { font-size: .95rem; line-height: 1.35; }
+.state-panel-content p { max-width: 58ch; margin-top: .3rem; color: var(--text-muted); font-size: .84rem; overflow-wrap: anywhere; }
+
+.chart-empty-state,
+.chart-loading-state {
+  min-height: 18rem;
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-card);
+  text-align: left;
+}
+.chart-loading-state .state-panel-icon {
+  border: 3px solid var(--border-default);
+  border-top-color: var(--brand-primary);
+  animation: feedback-spinner 850ms linear infinite;
+}
+
+.analysis-progress-panel.state-panel,
+.analysis-error-panel.state-panel { width: min(100%, 46rem); }
+.analysis-progress-panel > .state-panel-content { flex: 1; }
+.analysis-error-panel > .state-panel-content { display: grid; flex: 1; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; }
+.analysis-error-panel .analysis-error-actions { align-self: start; }
+
+.indeterminate-spinner {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-width: 3px;
+  border-color: var(--border-default);
+  border-top-color: var(--brand-primary);
+  animation: feedback-spinner 850ms linear infinite;
+}
+
+@keyframes feedback-spinner {
+  to { transform: rotate(360deg); }
+}
+
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 0;
+  box-shadow: var(--feedback-focus-ring);
+}
+
+:where(button, [role="button"]):active:not(:disabled) { transform: translateY(1px); }
+
+:where(button, input, select, textarea):disabled {
+  color: var(--text-disabled);
+  opacity: .72;
+}
+
+details > summary {
+  transition: color var(--feedback-fast) var(--ease-professional), background-color var(--feedback-fast) var(--ease-professional);
+}
+details[open] > summary { color: var(--brand-primary); }
+
+.message.error,
+.message.warning,
+.audit-info-state,
+.audit-neutral-state,
+.insight-neutral-copy,
+.hypothesis-empty-copy,
+.fd-e-unavailable {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .state-panel.state-page,
+  .state-panel.state-panel { padding: 1rem; }
+  .analysis-error-panel > .state-panel-content { grid-template-columns: 1fr; }
+  .analysis-error-actions { display: grid; width: 100%; }
+  .analysis-error-actions button,
+  .state-panel button { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-panel *,
+  details > summary { transition: none !important; }
+  .indeterminate-spinner,
+  .chart-loading-state .state-panel-icon { animation: none; border-color: var(--brand-primary); }
+  :where(button, [role="button"]):active:not(:disabled) { transform: none; }
+}

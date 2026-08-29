@@ -17,21 +17,20 @@ function PipelineSummary({ analysis, language, copy }) {
   ]
 
   return (
-    <section className="overview-section" aria-labelledby="pipeline-summary-title">
-      <div className="overview-section-heading">
-        <p className="eyebrow">{copy.eyebrow}</p>
-        <h2 id="pipeline-summary-title">{copy.title}</h2>
-        <p>{copy.description}</p>
-      </div>
+    <details className="overview-section pipeline-summary">
+      <summary id="pipeline-summary-title">
+        <span>{copy.title}</span>
+        <span aria-hidden="true">+</span>
+      </summary>
       <dl className="pipeline-summary-grid">
-        {items.map((item) => (
-          <div key={item.label}>
-            <dt>{item.label}</dt>
-            <dd>{item.value}</dd>
-          </div>
-        ))}
-      </dl>
-    </section>
+          {items.map((item) => (
+            <div key={item.label}>
+              <dt>{item.label}</dt>
+              <dd>{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+    </details>
   )
 }
 

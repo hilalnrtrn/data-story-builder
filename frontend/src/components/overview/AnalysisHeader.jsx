@@ -30,14 +30,11 @@ function AnalysisHeader({ analysis, language, copy }) {
     ? `${analysis.id.slice(0, 8)}…${analysis.id.slice(-4)}`
     : analysis.id
   return (
-    <section className="overview-analysis-header" aria-labelledby="analysis-summary-title">
-      <div className="overview-analysis-heading">
-        <div>
-          <p className="eyebrow">{copy.eyebrow}</p>
-          <h2 id="analysis-summary-title">{copy.detailsTitle}</h2>
-        </div>
-      </div>
-
+    <details className="overview-analysis-header">
+      <summary id="analysis-summary-title">
+        <span>{copy.detailsTitle}</span>
+        <span aria-hidden="true">+</span>
+      </summary>
       <dl className="analysis-metadata-grid">
         <div><dt>{copy.fileName}</dt><dd>{analysis.fileName || copy.notAvailable}</dd></div>
         <div><dt>{copy.analysisId}</dt><dd title={analysis.id}>{shortenedId}</dd></div>
@@ -45,7 +42,7 @@ function AnalysisHeader({ analysis, language, copy }) {
         <div><dt>{copy.completedAt}</dt><dd>{formatDateTime(analysis.completedAt)}</dd></div>
         <div><dt>{copy.datasetPeriod}</dt><dd>{datasetPeriod}</dd></div>
       </dl>
-    </section>
+    </details>
   )
 }
 

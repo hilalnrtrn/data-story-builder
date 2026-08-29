@@ -1,19 +1,18 @@
+import StatePanel from './StatePanel.jsx'
+
 function AnalysisProgressPanel({ phase, fileName, copy }) {
   const isLoadingDetail = phase === 'loading-detail'
 
   return (
-    <section
+    <StatePanel
+      variant="loading"
+      size="panel"
       className="analysis-progress-panel"
       role="status"
-      aria-live="polite"
-      aria-atomic="true"
+      ariaLive="polite"
+      ariaAtomic="true"
+      icon={<span className="indeterminate-spinner" aria-hidden="true" />}
     >
-      <div
-        className="indeterminate-spinner"
-        role="img"
-        aria-label={copy.indicatorLabel}
-      />
-
       <div className="analysis-progress-copy">
         <p className="analysis-progress-kicker">
           {isLoadingDetail ? copy.detailKicker : copy.analysisKicker}
@@ -30,16 +29,9 @@ function AnalysisProgressPanel({ phase, fileName, copy }) {
           </p>
         )}
 
-        {!isLoadingDetail && (
-          <>
-            <ul className="pipeline-explanation">
-              {copy.steps.map((step) => <li key={step}>{step}</li>)}
-            </ul>
-            <p className="pipeline-note">{copy.informationalNote}</p>
-          </>
-        )}
+        {!isLoadingDetail && <p className="pipeline-note">{copy.indeterminateNote}</p>}
       </div>
-    </section>
+    </StatePanel>
   )
 }
 

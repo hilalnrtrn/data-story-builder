@@ -24,6 +24,23 @@ def test_negative_orders_creates_error_finding():
     assert integrity["status"] == "FAILED"
 
 
+def test_negative_revenue_creates_error_finding():
+    dataframe = pd.DataFrame({"Revenue": [100.0, -25.0, 0.0]})
+
+    result = validate_integrity(dataframe)
+
+    finding = next(
+        item
+        for item in result["findings"]
+        if item["code"] == "VALUE_BELOW_MINIMUM"
+        and item["column"] == "Revenue"
+    )
+
+    assert finding["severity"] == "ERROR"
+    assert finding["affectedRowCount"] == 1
+    assert result["status"] == "FAILED"
+
+
 def test_discount_above_maximum_creates_error_finding():
     dataframe = pd.DataFrame(
         {

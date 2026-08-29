@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DataStoryBuilder.Application.Hypotheses;
 using DataStoryBuilder.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -87,8 +88,16 @@ public sealed class HypothesisLifecyclePersistence(
             return false;
         }
 
-        hypothesis.Status = HypothesisStatusTransitions.ToStorageValue(
-            targetStatus);
+        var current = HypothesisStatusTransitions.ToStorageValue(currentStatus);
+        var target = HypothesisStatusTransitions.ToStorageValue(targetStatus);
+        var reasons = JsonSerializer.Deserialize<List<string>>(
+                hypothesis.ReasonsJson)
+            ?? throw new JsonException(
+                "Persisted hypothesis reasons must be a JSON array.");
+        reasons.Add($"Hypothesis status changed from {current} to {target}.");
+
+        hypothesis.Status = target;
+        hypothesis.ReasonsJson = JsonSerializer.Serialize(reasons);
         return true;
     }
 

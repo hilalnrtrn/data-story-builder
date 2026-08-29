@@ -27,7 +27,7 @@ function DatasetDropzone({ selectedFile, uploading, hasError, copy, onFilesSelec
 
   return (
     <div
-      className={`dataset-dropzone${isDragging ? ' is-dragging' : ''}`}
+      className={`dataset-dropzone${isDragging ? ' is-dragging' : ''}${selectedFile ? ' has-file' : ''}${hasError ? ' has-error' : ''}`}
       aria-labelledby="dropzone-title"
       aria-describedby={`dropzone-instructions${hasError ? ' upload-error' : ''}`}
       onClick={(event) => {
@@ -63,7 +63,7 @@ function DatasetDropzone({ selectedFile, uploading, hasError, copy, onFilesSelec
 
       <div className="dropzone-copy">
         <h3 id="dropzone-title">
-          {isDragging ? copy.dropActive : copy.dropTitle}
+          {isDragging ? copy.dropActive : selectedFile ? copy.fileReady : copy.dropTitle}
         </h3>
         <p id="dropzone-instructions">{copy.or}</p>
       </div>
@@ -80,7 +80,14 @@ function DatasetDropzone({ selectedFile, uploading, hasError, copy, onFilesSelec
         {selectedFile ? copy.replaceFile : copy.chooseFile}
       </button>
 
-      <p className="dropzone-helper">{copy.helper}</p>
+      <div className="upload-formats" aria-label={copy.formatsLabel}><span>CSV</span><span>XLSX</span><small>{copy.sizeLimit}</small></div>
+
+      <div className="upload-workflow" aria-label={copy.workflowLabel}>
+        <p>{copy.workflowGuidance}</p>
+        <ol>{copy.workflowSteps.map((step) => <li key={step}>{step}</li>)}</ol>
+      </div>
+
+      <p className="upload-boundary">{copy.analyticsBoundary}</p>
     </div>
   )
 }

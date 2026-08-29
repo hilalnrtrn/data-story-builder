@@ -190,7 +190,7 @@ public sealed class Day15StoryAuditorGoldenTests
     }
 
     [Fact]
-    public void ArbitrarySemanticAdditionRemainsExplicitlyUnverified()
+    public void ClearUnsupportedSemanticAdditionBlocksFullAudit()
     {
         var grounded = GoldenGrounded();
         var story = Mutate(root =>
@@ -199,9 +199,11 @@ public sealed class Day15StoryAuditorGoldenTests
 
         var result = Audit(story, grounded);
 
-        Assert.Equal(StoryDataDiffStatus.Pass, result.Day14.Status);
+        Assert.Equal(StoryDataDiffStatus.Fail, result.Day14.Status);
+        Assert.True(result.Day14.HasSemanticSafetyFailure);
+        Assert.Equal(StoryAuditDecision.Block, result.Full.Decision);
         Assert.Contains(result.Day14.AuditLimitations, limitation =>
-            limitation.Contains("semantic assertions are not verified", StringComparison.Ordinal));
+            limitation.Contains("beyond explicit direction contradictions", StringComparison.Ordinal));
         Assert.DoesNotContain(result.Bias.Findings, finding =>
             finding.Message.Contains("customer satisfaction", StringComparison.OrdinalIgnoreCase));
     }

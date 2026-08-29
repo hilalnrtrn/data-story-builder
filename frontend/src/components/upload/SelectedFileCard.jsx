@@ -10,8 +10,8 @@ function SelectedFileCard({ file, language, copy, uploading, onRemove }) {
       <span className="file-type-indicator" aria-hidden="true">{extension}</span>
 
       <div className="selected-file-details">
-        <p className="selected-file-label">{copy.selectedFile}</p>
-        <strong>{file.name}</strong>
+        <p className="selected-file-label"><span aria-hidden="true">✓</span>{copy.ready}</p>
+        <strong title={file.name}>{file.name}</strong>
         <span>{extension} · {formattedSize} MB</span>
       </div>
 

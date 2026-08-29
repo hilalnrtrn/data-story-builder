@@ -9,11 +9,18 @@ function WorkspaceHeader({
   analysis,
   analysisCopy,
   languageCopy,
+  menuButtonRef,
+  mobileNavigationOpen,
+  onMobileNavigationToggle,
+  sectionId,
 }) {
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const completedDate = analysis?.completedAt ? new Date(analysis.completedAt) : null
   const completedAt = completedDate && !Number.isNaN(completedDate.getTime())
-    ? new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(completedDate)
+    ? new Intl.DateTimeFormat(locale, {
+      dateStyle: 'medium',
+      ...(sectionId === 'overview' ? {} : { timeStyle: 'short' }),
+    }).format(completedDate)
     : null
   const status = analysisCopy?.statuses?.[analysis?.status] || analysis?.status
   const statusTone = analysis?.status === 'Completed'
@@ -23,7 +30,20 @@ function WorkspaceHeader({
       : 'header-status-warning'
 
   return (
-    <header className="workspace-header">
+    <header className={`workspace-header workspace-header-${sectionId}`}>
+      <button
+        ref={menuButtonRef}
+        type="button"
+        className="mobile-menu-button"
+        aria-label={languageCopy.openNavigation}
+        aria-expanded={mobileNavigationOpen}
+        aria-controls="application-sidebar"
+        onClick={onMobileNavigationToggle}
+      >
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
+        <span aria-hidden="true" />
+      </button>
       <div className="workspace-heading-copy">
         <h1>{title}</h1>
         {analysis ? (

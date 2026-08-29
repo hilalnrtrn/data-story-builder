@@ -52,7 +52,7 @@ function RevenueOverTimeChart({ chart, language, copy, theme }) {
       x: {
         grid: { display: false },
         border: { display: false },
-        ticks: { color: textColor, maxRotation: 0, autoSkip: true, font: { size: 11 } },
+        ticks: { color: textColor, maxRotation: 0, autoSkip: true, font: { size: 12 } },
       },
       y: {
         beginAtZero: true,
@@ -60,7 +60,7 @@ function RevenueOverTimeChart({ chart, language, copy, theme }) {
         grid: { color: gridColor },
         ticks: {
           color: textColor,
-          font: { size: 11 },
+          font: { size: 12 },
           callback: (value) => numberFormatter.format(value),
         },
       },
@@ -91,7 +91,6 @@ function RevenueOverTimeChart({ chart, language, copy, theme }) {
 
   return (
     <ChartCard
-      eyebrow={copy.eyebrow}
       title={copy.title}
       footer={periodContext}
       isEmpty={!isReady}

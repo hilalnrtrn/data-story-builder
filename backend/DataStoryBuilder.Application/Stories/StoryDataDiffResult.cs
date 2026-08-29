@@ -44,7 +44,14 @@ public sealed record StoryDataDiffResult(
     IReadOnlyList<string> Reasons,
     IReadOnlyList<string> AuditLimitations)
 {
+    public const string SemanticSafetyReasonPrefix = "Semantic safety:";
+
     public bool AuditFailed => Status == StoryDataDiffStatus.Fail;
+
+    public bool HasSemanticSafetyFailure => ItemAudits.Any(audit =>
+        audit.Reasons.Any(reason => reason.StartsWith(
+            SemanticSafetyReasonPrefix,
+            StringComparison.Ordinal)));
 
     public IReadOnlyList<StoryNumericalMismatch> NumericalMismatches =>
         NumericalAudits
@@ -54,5 +61,6 @@ public sealed record StoryDataDiffResult(
     public bool RegenerationEligible =>
         OmittedSourceItemIds.Count > 0
         || UnexpectedSourceItemIds.Count > 0
-        || NumericalMismatches.Count > 0;
+        || NumericalMismatches.Count > 0
+        || HasSemanticSafetyFailure;
 }

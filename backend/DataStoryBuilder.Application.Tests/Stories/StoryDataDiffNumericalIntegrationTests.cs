@@ -18,7 +18,8 @@ public sealed class StoryDataDiffNumericalIntegrationTests
     {
         var result = EvaluateFinding(
             generatedText,
-            Evidence(evidenceValue, unit));
+            Evidence(evidenceValue, unit),
+            evidenceValue.StartsWith("-", StringComparison.Ordinal) ? "DOWN" : "UP");
 
         Assert.Equal(StoryDataDiffStatus.Pass, result.Status);
         Assert.Equal(1.0, result.StoryCoverageScore);
@@ -152,12 +153,13 @@ public sealed class StoryDataDiffNumericalIntegrationTests
 
     private static StoryDataDiffResult EvaluateFinding(
         string generatedText,
-        GroundedStoryEvidence evidence) =>
+        GroundedStoryEvidence evidence,
+        string direction = "UP") =>
         StoryDataDiffEvaluator.Evaluate(
             Story(Section(1, "OUTCOME", Item("finding", generatedText))),
             Input(
                 [new GroundedStorySection(1, "OUTCOME", ["finding"])],
-                [Finding("finding", evidence)],
+                [Finding("finding", direction, evidence)],
                 []));
 
     private static GeneratedExecutiveStory Story(
@@ -181,6 +183,12 @@ public sealed class StoryDataDiffNumericalIntegrationTests
     private static GroundedStoryFinding Finding(
         string id,
         params GroundedStoryEvidence[] evidence)
+        => Finding(id, "UP", evidence);
+
+    private static GroundedStoryFinding Finding(
+        string id,
+        string direction,
+        params GroundedStoryEvidence[] evidence)
     {
         using var json = JsonDocument.Parse("{}");
         return new GroundedStoryFinding(
@@ -192,7 +200,7 @@ public sealed class StoryDataDiffNumericalIntegrationTests
             null,
             null,
             json.RootElement.Clone(),
-            "UP",
+            direction,
             json.RootElement.Clone(),
             evidence,
             false,

@@ -46,21 +46,12 @@ function DatasetHealth({ analysis, language, copy, findingsCopy, analysisHeaderC
   const qualityScore = typeof quality?.score === 'number' && Number.isFinite(quality.score)
     ? quality.score
     : null
-  const qualityProgress = qualityScore !== null && qualityScore >= 0 && qualityScore <= 100
-    ? qualityScore
-    : 0
-  const qualityTone = integrity?.status === 'PASS'
-    ? 'quality-donut-success'
-    : integrity?.status === 'WARNING'
-      ? 'quality-donut-warning'
-      : integrity?.status === 'FAILED' || integrity?.status === 'FAIL'
-        ? 'quality-donut-danger'
-        : 'quality-donut-neutral'
+  const integrityStatusLabel = enumLabel(copy.integrityStatuses, integrity?.status)
 
   return (
     <>
-      <div className="overview-hero-grid">
-        <div className="overview-hero-revenue">
+      <div className="overview-primary-evidence-grid">
+        <div className="overview-primary-chart">
           <RevenueOverTimeChart
             chart={analysis.profile?.overviewCharts?.revenueOverTime}
             language={language}
@@ -76,77 +67,61 @@ function DatasetHealth({ analysis, language, copy, findingsCopy, analysisHeaderC
           compact
         />
 
-        <article className="quality-hero-card" aria-labelledby="quality-hero-title">
-          <div className="quality-hero-heading">
-            <p className="eyebrow">{copy.eyebrow}</p>
-            <h2 id="quality-hero-title">{copy.overallQuality}</h2>
-          </div>
-          <div
-            className={`quality-donut ${qualityTone}`}
-            style={{ '--quality-progress': `${qualityProgress * 3.6}deg` }}
-            role="img"
-            aria-label={`${copy.qualityScore}: ${formatScore(qualityScore)}`}
-          >
-            <span>
-              <strong>{formatScore(qualityScore)}</strong>
-              <small>{copy.qualityScore}</small>
-            </span>
-          </div>
-          <p>{copy.qualityDescription}</p>
-          <small className="quality-basis">
-            {copy.basis}: {enumLabel(copy.basisLabels, quality?.basis)}
-          </small>
-          <dl className="quality-hero-dimensions">
-            {qualityDimensions.map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{formatScore(value)}</dd>
-              </div>
-            ))}
-          </dl>
-        </article>
       </div>
 
-      <AnalysisHeader
-        analysis={analysis}
-        language={language}
-        copy={analysisHeaderCopy}
-      />
-
-      <section className="overview-section" aria-labelledby="dataset-health-title">
+      <section className="overview-section overview-data-health" aria-labelledby="dataset-health-title">
       <div className="overview-section-heading">
-        <p className="eyebrow">{copy.eyebrow}</p>
         <h2 id="dataset-health-title">{copy.title}</h2>
-        <p>{copy.description}</p>
+      </div>
+
+      <div className="data-health-overview">
+        <div className="data-health-score">
+          <span>{copy.overallQuality}</span>
+          <strong>{formatScore(qualityScore)}</strong>
+          <span className={`status ${integrityStatusClass}`}>
+            <span aria-hidden="true">{integrity?.status === 'PASS' ? '✓' : integrity?.status ? '!' : '○'}</span>
+            {integrityStatusLabel}
+          </span>
+          <small>{copy.basis}: {enumLabel(copy.basisLabels, quality?.basis)}</small>
+        </div>
+        <dl className="data-health-dimensions">
+          {qualityDimensions.map(([label, value]) => (
+            <div key={label}>
+              <div><dt>{label}</dt><dd>{formatScore(value)}</dd></div>
+              <progress max="100" value={Number.isFinite(value) ? value : 0} aria-label={`${label}: ${formatScore(value)}`} />
+            </div>
+          ))}
+        </dl>
       </div>
 
       <div className="dataset-health-sections">
-        <article className="dataset-health-subsection">
-          <div className="health-subsection-heading">
-            <h3>{copy.preparation}</h3>
-            <p>{copy.preparationDescription}</p>
+        <details className="dataset-health-subsection preparation-disclosure">
+          <summary>
+            <span><strong>{copy.preparation}</strong><small>{copy.preparationDescription}</small></span>
+            <span aria-hidden="true">+</span>
+          </summary>
+          <div className="preparation-content">
+            <dl className="health-value-grid preparation-grid">
+              {preparationItems.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{formatNumber(value)}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
-          <dl className="health-value-grid preparation-grid">
-            {preparationItems.map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{formatNumber(value)}</dd>
-              </div>
-            ))}
-          </dl>
-        </article>
+        </details>
 
         <article className="dataset-health-subsection integrity-subsection">
           <div className="health-subsection-heading">
             <h3>{copy.datasetIntegrity}</h3>
-            <p>{copy.integrityDescription}</p>
           </div>
 
           <div className="integrity-summary-layout">
             <div className="integrity-status-block">
               <span>{copy.status}</span>
               <strong className={`status ${integrityStatusClass}`}>
-                {enumLabel(copy.integrityStatuses, integrity?.status)}
+                {integrityStatusLabel}
               </strong>
             </div>
             <dl className="health-value-grid integrity-count-grid">
@@ -180,6 +155,12 @@ function DatasetHealth({ analysis, language, copy, findingsCopy, analysisHeaderC
           />
         </div>
       </div>
+
+      <AnalysisHeader
+        analysis={analysis}
+        language={language}
+        copy={analysisHeaderCopy}
+      />
     </>
   )
 }

@@ -17,7 +17,10 @@ from app.services.profiler import profile_dataset
 from app.services.relationship_engine import generate_relationships
 from app.services.semantic_roles import detect_semantic_roles
 from app.services.insight_engine import generate_insights
-from app.services.story_planner import build_story_plan
+from app.services.story_planner import (
+    InsufficientStoryDataError,
+    build_story_plan,
+)
 from app.services.hypothesis_tracker import track_hypotheses
 from app.services.overview_chart_data import build_overview_chart_data
 
@@ -195,6 +198,15 @@ async def prepare_uploaded_dataset(
         raise HTTPException(
             status_code=400,
             detail=str(exc),
+        ) from exc
+    except InsufficientStoryDataError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "The dataset does not contain the required analytical "
+                "structure or enough valid findings to produce an "
+                "analysis story."
+            ),
         ) from exc
 
 

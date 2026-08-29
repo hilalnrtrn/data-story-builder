@@ -7,7 +7,7 @@ namespace DataStoryBuilder.Application.Tests.Stories;
 public sealed class StoryDataDiffReportCompletionTests
 {
     private const string SemanticLimitation =
-        "Arbitrary nonnumerical semantic assertions are not verified by the current prose-only generated-story contract.";
+        "Semantic assertions beyond explicit direction contradictions and the bounded material business-concept vocabulary are not verified by the current prose-only generated-story contract.";
 
     [Fact]
     public void FindingWithEvidenceIsStrongAndPerfectStoryNeedsNoRegeneration()

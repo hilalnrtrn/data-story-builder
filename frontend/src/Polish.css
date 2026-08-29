@@ -1,0 +1,209 @@
+/* FD-M: final visual-system alignment without changing screen identity. */
+
+:root {
+  --polish-control-height: 2.5rem;
+  --polish-compact-height: 1.5rem;
+  --polish-section-gap: 1.25rem;
+  --polish-icon-gap: .45rem;
+}
+
+.eyebrow,
+.empty-state-kicker,
+.analysis-progress-kicker,
+.analysis-error-kicker {
+  font-size: .7rem;
+  font-weight: 750;
+  letter-spacing: .07em;
+  line-height: 1.35;
+}
+
+:where(
+  .overview-section-header,
+  .insight-list-heading,
+  .fd-e2-section-heading,
+  .fd-e3-heading,
+  .fd-e4-heading,
+  .audit-panel-heading,
+  .hypothesis-detail-heading
+) h3 {
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  font-weight: 740;
+  line-height: 1.3;
+}
+
+:where(
+  .summary-value,
+  .quality-score,
+  .hero-primary-value,
+  .insight-card-primary-signal strong,
+  .fd-e-primary-signal strong,
+  .audit-pillar-grid dd,
+  .hypothesis-card-metadata dd,
+  .hypothesis-detail-hero dd,
+  .history-summary dd,
+  .history-signals dd,
+  .story-generation-metadata dd
+) {
+  font-variant-numeric: tabular-nums;
+}
+
+:where(
+  .status,
+  .audit-badge,
+  .hypothesis-status,
+  .history-current,
+  .history-status,
+  .story-role-badge,
+  .story-qualification-badge,
+  .insight-priority
+) {
+  min-height: var(--polish-compact-height);
+  align-items: center;
+  gap: .35rem;
+  padding: .2rem .5rem;
+  border-radius: var(--radius-pill);
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+:where(
+  .primary-button,
+  .secondary-button,
+  .upload-button,
+  .browse-button,
+  .history-open-button,
+  .hypothesis-open-button,
+  .hypothesis-lifecycle-actions button,
+  .insight-reset-button,
+  .analysis-error-actions button
+) {
+  min-height: var(--polish-control-height);
+  align-items: center;
+  justify-content: center;
+  gap: var(--polish-icon-gap);
+  border-radius: var(--radius-control);
+  font-weight: 700;
+}
+
+:where(
+  .insight-filter-button,
+  .insight-scan-filter,
+  .insight-sort-control select,
+  .language-switcher,
+  .theme-toggle
+) {
+  min-height: 2.375rem;
+  border-radius: var(--radius-control);
+}
+
+:where(
+  .insight-drawer-close,
+  .sidebar-mobile-close,
+  .mobile-menu-button,
+  .hypothesis-detail-header button
+) {
+  width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  flex: 0 0 2.75rem;
+}
+
+:where(
+  .story-evidence-disclosure,
+  .story-technical-trace,
+  .story-report-details,
+  .audit-detail-disclosure,
+  .audit-technical-details,
+  .hypothesis-reasoning,
+  .hypothesis-traceability,
+  .history-technical
+) > summary {
+  min-height: 2.625rem;
+  align-items: center;
+  gap: .65rem;
+  color: var(--text-secondary);
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+:where(
+  .story-technical-trace,
+  .story-report-details,
+  .audit-technical-details,
+  .hypothesis-traceability
+) {
+  border-color: var(--border-default);
+}
+
+:where(
+  .story-technical-trace,
+  .audit-technical-details,
+  .hypothesis-traceability,
+  .history-technical
+) :where(code, dt, dd) {
+  font-size: max(.72rem, 11.5px);
+  line-height: 1.45;
+}
+
+:where(
+  .chart-card-footer,
+  .story-item-list,
+  .story-evidence-disclosure,
+  .story-technical-trace,
+  .audit-panel,
+  .hypothesis-detail-section,
+  .history-item article
+) {
+  border-color: var(--border-default);
+}
+
+.chart-card-header h2,
+.history-heading h2,
+.hypothesis-explorer-header h2 {
+  font-weight: 740;
+  line-height: 1.25;
+}
+
+.chart-card-header > p:last-child,
+.history-heading > div > p:last-child,
+.hypothesis-explorer-header > div > p:last-child,
+.audit-panel-description {
+  line-height: 1.55;
+}
+
+.upload-symbol,
+.analysis-error-symbol,
+.state-panel-icon,
+.history-marker {
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme='dark'] :where(
+  .state-panel.state-error,
+  .analysis-error-panel,
+  .selected-file-card,
+  .history-item.is-current article
+) {
+  box-shadow: none;
+}
+
+@media (max-width: 600px) {
+  :root { --polish-section-gap: 1rem; }
+
+  :where(
+    .primary-button,
+    .secondary-button,
+    .upload-button,
+    .browse-button,
+    .history-open-button,
+    .hypothesis-lifecycle-actions button,
+    .analysis-error-actions button
+  ) { min-height: 2.75rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(button, select, summary) { transition: none !important; }
+}

@@ -22,35 +22,16 @@ function ClaimEvidence({ sourceItemId, planItem, itemAudit, fallbackEvidence, co
   return (
     <details className="story-evidence-disclosure">
       <summary>
-        <span>{copy.viewEvidence}</span>
-        <span className="story-evidence-count">
-          {copy.evidenceCount.replace('{count}', resolvedEvidence.length)}
-        </span>
+        <span className="story-evidence-label"><span aria-hidden="true">◇</span>{copy.evidenceCompact.replace('{count}', resolvedEvidence.length)}</span>
       </summary>
 
       <div className="story-trace-panel">
-        <dl className="story-trace-metadata">
-          <div><dt>{copy.sourceItem}</dt><dd>{sourceItemId}</dd></div>
-          <div><dt>{copy.sourceInsight}</dt><dd>{insightId || copy.unavailable}</dd></div>
-          <div>
-            <dt>{copy.coverage}</dt>
-            <dd>{hasAudit
-              ? (itemAudit.isCovered ? copy.covered : copy.notCovered)
-              : copy.unavailable}</dd>
-          </div>
-          <div>
-            <dt>{copy.evidenceStrength}</dt>
-            <dd>{strengthKey ? copy.evidenceStrengths[strengthKey] : copy.unavailable}</dd>
-          </div>
-        </dl>
-
         {resolvedEvidence.length > 0 ? (
           <ul className="story-evidence-list">
             {resolvedEvidence.map((evidence, index) => (
               <li key={`${evidence?.code || 'evidence'}-${index}`}>
                 <div>
                   <strong>{evidence?.label || evidence?.code || copy.evidence}</strong>
-                  {evidence?.code && <code>{evidence.code}</code>}
                 </div>
                 <span>
                   {presentValue(evidence?.value, copy.unavailable)}
@@ -66,6 +47,21 @@ function ClaimEvidence({ sourceItemId, planItem, itemAudit, fallbackEvidence, co
         {!hasAudit && (
           <p className="story-trace-note">{copy.auditUnavailable}</p>
         )}
+
+        <details className="story-technical-trace">
+          <summary>{copy.technicalTraceability}</summary>
+          <dl className="story-trace-metadata">
+            <div><dt>{copy.sourceItem}</dt><dd>{sourceItemId}</dd></div>
+            <div><dt>{copy.sourceInsight}</dt><dd>{insightId || copy.unavailable}</dd></div>
+            <div><dt>{copy.coverage}</dt><dd>{hasAudit ? (itemAudit.isCovered ? copy.covered : copy.notCovered) : copy.unavailable}</dd></div>
+            <div><dt>{copy.evidenceStrength}</dt><dd>{strengthKey ? copy.evidenceStrengths[strengthKey] : copy.unavailable}</dd></div>
+          </dl>
+          {resolvedEvidence.some((evidence) => evidence?.code) && (
+            <ul className="story-technical-codes">
+              {resolvedEvidence.map((evidence, index) => evidence?.code && <li key={`${evidence.code}-${index}`}><span>{evidence.label || copy.evidence}</span><code>{evidence.code}</code></li>)}
+            </ul>
+          )}
+        </details>
       </div>
     </details>
   )

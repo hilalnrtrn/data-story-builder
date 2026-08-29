@@ -12,17 +12,24 @@ public sealed class HypothesisLifecycleTests
     [InlineData("OPEN", HypothesisLifecycleStatus.Rejected, "REJECTED")]
     [InlineData("SUPPORTED", HypothesisLifecycleStatus.Confirmed, "CONFIRMED")]
     [InlineData("SUPPORTED", HypothesisLifecycleStatus.Rejected, "REJECTED")]
-    public void LockedTransitionsSucceed(
+    public void LockedTransitionsAppendExactlyOneDeterministicReason(
         string current,
         HypothesisLifecycleStatus target,
         string expected)
     {
         var hypothesis = Entity(current);
+        hypothesis.ReasonsJson = "[\"Initial hypothesis created.\"]";
 
         Assert.True(HypothesisLifecyclePersistence.ApplyStatusTransition(
             hypothesis,
             target));
         Assert.Equal(expected, hypothesis.Status);
+        Assert.Equal(
+            [
+                "Initial hypothesis created.",
+                $"Hypothesis status changed from {current} to {expected}."
+            ],
+            Reasons(hypothesis));
     }
 
     [Theory]
@@ -39,11 +46,13 @@ public sealed class HypothesisLifecycleTests
         HypothesisLifecycleStatus target)
     {
         var hypothesis = Entity(current);
+        var reasons = hypothesis.ReasonsJson;
 
         Assert.False(HypothesisLifecyclePersistence.ApplyStatusTransition(
             hypothesis,
             target));
         Assert.Equal(current, hypothesis.Status);
+        Assert.Equal(reasons, hypothesis.ReasonsJson);
     }
 
     [Theory]
@@ -56,11 +65,13 @@ public sealed class HypothesisLifecycleTests
         HypothesisLifecycleStatus target)
     {
         var hypothesis = Entity(current);
+        var reasons = hypothesis.ReasonsJson;
 
         Assert.False(HypothesisLifecyclePersistence.ApplyStatusTransition(
             hypothesis,
             target));
         Assert.Equal(current, hypothesis.Status);
+        Assert.Equal(reasons, hypothesis.ReasonsJson);
     }
 
     [Theory]
@@ -74,17 +85,18 @@ public sealed class HypothesisLifecycleTests
     }
 
     [Fact]
-    public void ValidTransitionChangesOnlyStatus()
+    public void ValidTransitionChangesOnlyLifecycleFields()
     {
         var hypothesis = Entity("OPEN");
-        var snapshot = Snapshot(hypothesis);
+        var snapshot = AnalyticalSnapshot(hypothesis);
 
         Assert.True(HypothesisLifecyclePersistence.ApplyStatusTransition(
             hypothesis,
             HypothesisLifecycleStatus.Supported));
 
         Assert.Equal("SUPPORTED", hypothesis.Status);
-        Assert.Equal(snapshot, Snapshot(hypothesis));
+        Assert.Equal(snapshot, AnalyticalSnapshot(hypothesis));
+        Assert.Equal(3, Reasons(hypothesis).Count);
     }
 
     [Fact]
@@ -99,6 +111,25 @@ public sealed class HypothesisLifecycleTests
             hypothesis,
             HypothesisLifecycleStatus.Confirmed));
         Assert.Equal("OPEN", hypothesis.Status);
+    }
+
+    [Fact]
+    public void RepeatRequestAfterSuccessDoesNotAppendDuplicateReason()
+    {
+        var hypothesis = Entity("OPEN");
+
+        Assert.True(HypothesisLifecyclePersistence.ApplyStatusTransition(
+            hypothesis,
+            HypothesisLifecycleStatus.Supported));
+        var reasonsAfterSuccess = hypothesis.ReasonsJson;
+
+        Assert.False(HypothesisLifecyclePersistence.ApplyStatusTransition(
+            hypothesis,
+            HypothesisLifecycleStatus.Supported));
+        Assert.Equal("SUPPORTED", hypothesis.Status);
+        Assert.Equal(reasonsAfterSuccess, hypothesis.ReasonsJson);
+        Assert.Single(Reasons(hypothesis), reason =>
+            reason == "Hypothesis status changed from OPEN to SUPPORTED.");
     }
 
     [Fact]
@@ -157,7 +188,10 @@ public sealed class HypothesisLifecycleTests
         ReasonsJson = "[\"Creation reason.\",\"Scoring reason.\"]"
     };
 
-    private static object Snapshot(Hypothesis item) => new
+    private static IReadOnlyList<string> Reasons(Hypothesis item) =>
+        System.Text.Json.JsonSerializer.Deserialize<string[]>(item.ReasonsJson)!;
+
+    private static object AnalyticalSnapshot(Hypothesis item) => new
     {
         item.Id,
         item.AnalysisId,
@@ -169,7 +203,6 @@ public sealed class HypothesisLifecycleTests
         item.SourceRelationshipIdsJson,
         item.SupportingEvidenceJson,
         item.CounterEvidenceJson,
-        item.MissingContextJson,
-        item.ReasonsJson
+        item.MissingContextJson
     };
 }

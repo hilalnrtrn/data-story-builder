@@ -49,6 +49,44 @@
   --color-control-disabled: #e9ebf0;
   --color-text-disabled: #8b94a6;
 
+  /* FD-B canonical design foundation. */
+  --surface-canvas: #f6f7fb;
+  --surface-sidebar: #fbfcff;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f8f9fd;
+  --surface-elevated: #ffffff;
+  --surface-soft: #f1f3f9;
+  --surface-hover: #eef1f8;
+  --text-primary: #171b2e;
+  --text-secondary: #525c73;
+  --text-muted: #737e94;
+  --text-disabled: #929bad;
+  --text-on-brand: #ffffff;
+  --border-subtle: #edf0f5;
+  --border-default: #dfe3ec;
+  --border-strong: #c5ccd9;
+  --brand-primary: #6754d9;
+  --brand-secondary: #3976df;
+  --brand-soft: #efedff;
+  --state-success: #23835a;
+  --state-success-soft: #eaf8f1;
+  --state-warning: #9a6510;
+  --state-warning-soft: #fff6df;
+  --state-danger: #c04444;
+  --state-danger-soft: #fff0f0;
+  --state-info: #3976df;
+  --state-info-soft: #edf4ff;
+  --state-neutral: #69748a;
+  --priority-critical: #b83f4b;
+  --priority-high: #a56812;
+  --priority-standard: #69748a;
+  --direction-up: #3976df;
+  --direction-down: #7b68d9;
+  --direction-stable: #69748a;
+  --epistemic-fact: #23835a;
+  --epistemic-insight: #3976df;
+  --epistemic-hypothesis: #8a5ab5;
+
   /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -58,6 +96,14 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-10: 2.5rem;
+  --spacing-micro: var(--space-1);
+  --spacing-related: var(--space-2);
+  --spacing-compact: var(--space-3);
+  --spacing-default: var(--space-4);
+  --spacing-card: var(--space-5);
+  --spacing-major: var(--space-6);
+  --spacing-section: var(--space-8);
+  --spacing-hero: var(--space-10);
 
   /* Shape and elevation */
   --radius-control: 0.5rem;
@@ -66,13 +112,27 @@
   --shadow-card: 0 1px 2px rgb(21 27 45 / 5%);
   --shadow-elevated: 0 12px 32px rgb(21 27 45 / 9%);
   --shadow-brand: 0 8px 24px var(--color-brand-glow);
+  --shadow-surface: 0 1px 2px rgb(20 27 48 / 4%), 0 8px 24px rgb(20 27 48 / 3%);
+  --shadow-overlay: 0 24px 64px rgb(13 18 35 / 18%);
+  --glow-brand-soft: 0 0 0 1px rgb(103 84 217 / 8%), 0 10px 28px rgb(103 84 217 / 10%);
+  --radius-small: 0.5rem;
+  --radius-medium: 0.75rem;
+  --radius-large: 1rem;
+  --radius-pill: 999px;
+  --motion-fast: 140ms;
+  --motion-normal: 200ms;
+  --motion-slow: 280ms;
+  --ease-professional: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* Compact product typography */
-  --font-size-page-title: clamp(1.625rem, 2.5vw, 2rem);
-  --font-size-section-title: clamp(1.25rem, 1.8vw, 1.5rem);
+  --font-size-display: 2rem;
+  --font-size-page-title: 1.75rem;
+  --font-size-feature-hero: 1.5rem;
+  --font-size-section-title: 1.25rem;
   --font-size-card-title: 1rem;
-  --font-size-kpi: clamp(1.5rem, 2.2vw, 2rem);
+  --font-size-kpi: 2rem;
   --font-size-body: 0.9375rem;
+  --font-size-compact: 0.875rem;
   --font-size-label: 0.75rem;
   --font-size-meta: 0.75rem;
   --line-height-tight: 1.2;
@@ -91,6 +151,32 @@
   --radius-lg: var(--radius-panel);
   --shadow-sm: var(--shadow-card);
   --shadow-md: var(--shadow-elevated);
+
+  /* Existing feature styles continue through these aliases. */
+  --color-canvas: var(--surface-canvas);
+  --color-sidebar: var(--surface-sidebar);
+  --color-surface: var(--surface-primary);
+  --color-surface-raised: var(--surface-elevated);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  --color-text-on-brand: var(--text-on-brand);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--state-success);
+  --color-success-soft: var(--state-success-soft);
+  --color-warning: var(--state-warning);
+  --color-warning-soft: var(--state-warning-soft);
+  --color-danger: var(--state-danger);
+  --color-danger-soft: var(--state-danger-soft);
+  --color-info: var(--state-info);
+  --color-info-soft: var(--state-info-soft);
 }
 
 [data-theme="dark"] {
@@ -125,6 +211,69 @@
   --color-text-disabled: #697286;
   --shadow-card: 0 1px 2px rgb(0 0 0 / 28%);
   --shadow-elevated: 0 16px 38px rgb(0 0 0 / 34%);
+  --surface-canvas: #080b14;
+  --surface-sidebar: #0b0f1b;
+  --surface-primary: #111725;
+  --surface-secondary: #141b2b;
+  --surface-elevated: #182033;
+  --surface-soft: #171e2d;
+  --surface-hover: #1c2436;
+  --text-primary: #f2f4f9;
+  --text-secondary: #b7bfd0;
+  --text-muted: #8d98ae;
+  --text-disabled: #687286;
+  --text-on-brand: #ffffff;
+  --border-subtle: #1b2333;
+  --border-default: #273146;
+  --border-strong: #3b4862;
+  --brand-primary: #8a78f4;
+  --brand-secondary: #639af2;
+  --brand-soft: #211e3d;
+  --state-success: #5ac995;
+  --state-success-soft: #132a22;
+  --state-warning: #e3b15c;
+  --state-warning-soft: #302714;
+  --state-danger: #f08087;
+  --state-danger-soft: #321b22;
+  --state-info: #76aaf6;
+  --state-info-soft: #16253d;
+  --state-neutral: #96a1b6;
+  --priority-critical: #f08087;
+  --priority-high: #e3b15c;
+  --priority-standard: #96a1b6;
+  --direction-up: #76aaf6;
+  --direction-down: #a794f7;
+  --direction-stable: #96a1b6;
+  --epistemic-fact: #5ac995;
+  --epistemic-insight: #76aaf6;
+  --epistemic-hypothesis: #d092e2;
+  --shadow-surface: 0 1px 2px rgb(0 0 0 / 28%), 0 12px 28px rgb(0 0 0 / 14%);
+  --shadow-overlay: 0 28px 72px rgb(0 0 0 / 46%);
+  --glow-brand-soft: 0 0 0 1px rgb(138 120 244 / 13%), 0 12px 32px rgb(83 68 178 / 16%);
+  --color-canvas: var(--surface-canvas);
+  --color-sidebar: var(--surface-sidebar);
+  --color-surface: var(--surface-primary);
+  --color-surface-raised: var(--surface-elevated);
+  --color-surface-soft: var(--surface-soft);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  --color-text-on-brand: var(--text-on-brand);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-brand-soft: var(--brand-soft);
+  --color-success: var(--state-success);
+  --color-success-soft: var(--state-success-soft);
+  --color-warning: var(--state-warning);
+  --color-warning-soft: var(--state-warning-soft);
+  --color-danger: var(--state-danger);
+  --color-danger-soft: var(--state-danger-soft);
+  --color-info: var(--state-info);
+  --color-info-soft: var(--state-info-soft);
 }
 
 * {
@@ -170,15 +319,28 @@ textarea,
 select,
 a {
   transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease;
+    border-color var(--motion-fast) var(--ease-professional),
+    background-color var(--motion-fast) var(--ease-professional),
+    color var(--motion-fast) var(--ease-professional),
+    box-shadow var(--motion-normal) var(--ease-professional),
+    transform var(--motion-fast) var(--ease-professional);
 }
 
 :focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--color-focus) 78%, transparent);
-  outline-offset: 2px;
+  outline: 3px solid color-mix(in srgb, var(--color-focus) 72%, transparent);
+  outline-offset: 3px;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
 }
 
 ::selection {

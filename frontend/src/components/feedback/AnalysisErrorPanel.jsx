@@ -1,6 +1,8 @@
+import StatePanel from './StatePanel.jsx'
+
 function AnalysisErrorPanel({ message, canRetryDetail, copy, onRetryDetail, onChooseAnother }) {
   return (
-    <section className="analysis-error-panel" id="upload-error" role="alert">
+    <StatePanel variant="error" size="panel" className="analysis-error-panel" role="alert" icon={<span className="analysis-error-symbol" aria-hidden="true">!</span>}>
       <div>
         <p className="analysis-error-kicker">{copy.kicker}</p>
         <h3>{copy.title}</h3>
@@ -20,7 +22,7 @@ function AnalysisErrorPanel({ message, canRetryDetail, copy, onRetryDetail, onCh
           {copy.chooseAnother}
         </button>
       </div>
-    </section>
+    </StatePanel>
   )
 }
 

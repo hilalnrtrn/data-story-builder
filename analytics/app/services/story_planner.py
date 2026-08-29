@@ -33,6 +33,10 @@ PRIORITY_ORDER = {
 }
 
 
+class InsufficientStoryDataError(ValueError):
+    """Raised when validated findings cannot satisfy the Story Planner invariant."""
+
+
 def build_integrity_lookup(
     integrity_evaluations: list[InsightIntegrityEvaluation],
 ) -> dict[str, InsightIntegrityEvaluation]:
@@ -904,7 +908,9 @@ def build_story_plan(
         integrity_evaluations,
     )
     if not candidates:
-        raise ValueError("No story-eligible ranked candidates are available")
+        raise InsufficientStoryDataError(
+            "No story-eligible ranked candidates are available"
+        )
 
     main_outcome = select_main_outcome(
         candidates,

@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import ChartEmptyState from './ChartEmptyState.jsx'
+import StatePanel from '../feedback/StatePanel.jsx'
 
 function ChartCard({
   eyebrow,
@@ -30,10 +31,7 @@ function ChartCard({
 
       <div className="chart-card-content">
         {isLoading ? (
-          <div className="chart-loading-state" role="status">
-            <span className="indeterminate-spinner" aria-hidden="true" />
-            <span>{loadingLabel}</span>
-          </div>
+          <StatePanel variant="loading" size="inline" className="chart-loading-state" title={loadingLabel} role="status" ariaLive="polite" />
         ) : isEmpty ? (
           <ChartEmptyState title={emptyTitle} description={emptyDescription} />
         ) : (

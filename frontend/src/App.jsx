@@ -17,11 +17,21 @@ import HypothesisExplorer from './components/hypotheses/HypothesisExplorer.jsx'
 import DatasetHealth from './components/overview/DatasetHealth.jsx'
 import PipelineSummary from './components/overview/PipelineSummary.jsx'
 import SummaryCards from './components/overview/SummaryCards.jsx'
+import PrimaryInsightHero from './components/overview/PrimaryInsightHero.jsx'
 import DatasetDropzone from './components/upload/DatasetDropzone.jsx'
 import SelectedFileCard from './components/upload/SelectedFileCard.jsx'
 import { translations } from './i18n/translations.js'
 import { mapAnalysisDetail } from './models/analysisMappers.js'
 import './App.css'
+import './Shell.css'
+import './Overview.css'
+import './Insights.css'
+import './Explainability.css'
+import './History.css'
+import './Upload.css'
+import './Feedback.css'
+import './Certification.css'
+import './Polish.css'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const SUPPORTED_EXTENSIONS = ['csv', 'xlsx']
@@ -634,6 +644,13 @@ function App() {
       if (currentAnalysis) {
         return (
           <div className="analysis-overview">
+            <PrimaryInsightHero
+              insights={currentAnalysis.insights}
+              storyGeneration={currentAnalysis.storyGeneration}
+              language={language}
+              copy={copy.overview.findings}
+              storyCopy={copy.overview.summary}
+            />
             <SummaryCards
               analysis={currentAnalysis}
               language={language}

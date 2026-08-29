@@ -111,6 +111,11 @@ function InsightExplorer({ analysis, language, copy, onStartAnalysis, onOpenHist
   const selectedInsight = selectedInsightId
     ? insights.find((insight) => insight?.id === selectedInsightId) || null
     : null
+  const resetFilters = () => {
+    setActiveType('ALL')
+    setScanFilter('ALL')
+    setSortBy('backend')
+  }
 
   if (!analysis) {
     return (
@@ -140,8 +145,8 @@ function InsightExplorer({ analysis, language, copy, onStartAnalysis, onOpenHist
     <section className="insight-explorer" aria-labelledby="insight-explorer-title">
       <header className="insight-explorer-header">
         <div>
-          <h2 id="insight-explorer-title">{copy.title}</h2>
-          <p>{copy.description}</p>
+          <h2 id="insight-explorer-title" className="visually-hidden">{copy.title}</h2>
+          <p>{copy.findingCount.replace('{count}', insights.length)}</p>
         </div>
       </header>
 
@@ -183,6 +188,7 @@ function InsightExplorer({ analysis, language, copy, onStartAnalysis, onOpenHist
         onTypeChange={setActiveType}
         onScanFilterChange={setScanFilter}
         onSortChange={setSortBy}
+        onReset={resetFilters}
       />
 
       <section className="remaining-insights" aria-labelledby="remaining-insights-title">
@@ -194,6 +200,9 @@ function InsightExplorer({ analysis, language, copy, onStartAnalysis, onOpenHist
           <div className="overview-inline-empty" role="status">
             <h2>{copy.noMatchesTitle}</h2>
             <p>{copy.noMatchesDescription}</p>
+            <button type="button" className="secondary-button" onClick={resetFilters}>
+              {copy.resetFilters}
+            </button>
           </div>
         ) : (
           <div className="insight-explorer-list">

@@ -29,7 +29,7 @@ function HypothesisDetail({ hypothesis, insights, relationships, language, copy,
   const sourceInsights = asArray(hypothesis?.sourceInsightIds)
   const sourceRelationships = asArray(hypothesis?.sourceRelationshipIds)
   const confidence = typeof hypothesis?.confidence === 'number' && Number.isFinite(hypothesis.confidence)
-    ? new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(hypothesis.confidence)
+    ? new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 2 }).format(hypothesis.confidence)
     : copy.unavailable
   const availableStatuses = nextStatuses[hypothesis?.status] || []
 
@@ -60,7 +60,6 @@ function HypothesisDetail({ hypothesis, insights, relationships, language, copy,
           <div><dt>{copy.status}</dt><dd>{copy.statuses[hypothesis?.status] || hypothesis?.status || copy.unavailable}</dd></div>
           <div><dt>{copy.confidenceScore}</dt><dd>{confidence}</dd></div>
           <div><dt>{copy.causality}</dt><dd>{copy.causalityStatuses[hypothesis?.causalityStatus] || hypothesis?.causalityStatus || copy.unavailable}</dd></div>
-          <div><dt>{copy.trackerVersion}</dt><dd>{hypothesis?.trackerVersion || copy.unavailable}</dd></div>
         </dl>
         <p className="hypothesis-safety-note">{copy.detail.safetyNote}</p>
       </section>
@@ -136,11 +135,17 @@ function HypothesisDetail({ hypothesis, insights, relationships, language, copy,
         )}
       </section>
 
-      {reasons.length > 0 && <section className="hypothesis-detail-section"><h3>{copy.reasons}</h3><ul className="hypothesis-reason-list">{reasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul></section>}
+      <section className="hypothesis-causality-boundary" aria-labelledby="hypothesis-causality-title">
+        <div><p className="eyebrow">{copy.causality}</p><h3 id="hypothesis-causality-title">{copy.causalityStatuses[hypothesis?.causalityStatus] || hypothesis?.causalityStatus || copy.unavailable}</h3></div>
+        <p>{copy.detail.causalityBoundary}</p>
+      </section>
+
+      {reasons.length > 0 && <details className="hypothesis-reasoning"><summary>{copy.reasons}</summary><ul className="hypothesis-reason-list">{reasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul></details>}
 
       <details className="hypothesis-traceability">
         <summary>{copy.detail.traceability}</summary>
         <div>
+          <section><h3>{copy.technicalMetadata}</h3><dl><div><dt>{copy.hypothesisId}</dt><dd><code>{hypothesis?.id || copy.unavailable}</code></dd></div><div><dt>{copy.trackerVersion}</dt><dd>{hypothesis?.trackerVersion || copy.unavailable}</dd></div></dl></section>
           <section><span className="epistemic-label is-insight">{copy.epistemic.analyticalFinding}</span><h3>{copy.sourceInsights}</h3>{sourceInsights.length === 0 ? <p>{copy.unavailable}</p> : <ul>{sourceInsights.map((id) => <li key={id}><code>{id}</code><span>{insightById.get(id)?.metric || copy.unavailable}</span></li>)}</ul>}</section>
           <section><h3>{copy.sourceRelationships}</h3>{sourceRelationships.length === 0 ? <p>{copy.unavailable}</p> : <ul>{sourceRelationships.map((id) => <li key={id}><code>{id}</code><span>{relationshipById.get(id)?.type || copy.unavailable}</span></li>)}</ul>}</section>
         </div>

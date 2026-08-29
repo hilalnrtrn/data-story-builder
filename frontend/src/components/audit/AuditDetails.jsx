@@ -4,7 +4,9 @@ import {
   BIAS_RISKS,
   BIAS_STATUSES,
   displayValue,
+  DIFF_STATUSES,
   EVIDENCE_STRENGTHS,
+  formatScore,
   semanticClass,
 } from './auditPresentation.js'
 
@@ -23,20 +25,24 @@ const SourceReference = ({ sourceItemId, sourceById, copy }) => {
   )
 }
 
-export function StoryDataDiff({ audit, sourceById, copy }) {
+export function StoryDataDiff({ audit, sourceById, locale, copy }) {
   const groups = [
-    ['covered', asArrayOrNull(audit.coveredSourceItemIds)],
     ['omitted', asArrayOrNull(audit.omittedSourceItemIds)],
     ['unexpected', asArrayOrNull(audit.unexpectedSourceItemIds)],
+    ['covered', asArrayOrNull(audit.coveredSourceItemIds)],
   ]
   const itemAudits = asArrayOrNull(audit.itemAudits)
+  const reasons = asArrayOrNull(audit.reasons)
+  const statusKey = DIFF_STATUSES[audit.status]
 
   return (
     <section className="audit-panel" aria-labelledby="story-data-diff-title">
       <div className="audit-panel-heading">
         <div><p className="eyebrow">{copy.diff.eyebrow}</p><h3 id="story-data-diff-title">{copy.diff.title}</h3></div>
-        <span>{copy.diff.required.replace('{count}', asArrayOrNull(audit.requiredSourceItemIds)?.length ?? copy.unavailable)}</span>
+        <div className="audit-heading-badges"><AuditBadge state={statusKey} label={statusKey ? copy.diff.statuses[statusKey] : copy.unavailable} /><strong>{formatScore(audit.storyCoverageScore, locale, copy.unavailable)}</strong></div>
       </div>
+      <p className="audit-panel-description">{copy.diff.required.replace('{count}', asArrayOrNull(audit.requiredSourceItemIds)?.length ?? copy.unavailable)}</p>
+      {typeof audit.storyCoverageScore === 'number' && <progress className="audit-coverage-meter" max="1" value={audit.storyCoverageScore} aria-label={`${copy.summary.storyCoverage}: ${formatScore(audit.storyCoverageScore, locale, copy.unavailable)}`} />}
 
       <div className="audit-diff-grid">
         {groups.map(([key, items]) => (
@@ -50,6 +56,8 @@ export function StoryDataDiff({ audit, sourceById, copy }) {
           </section>
         ))}
       </div>
+
+      {reasons && reasons.length > 0 && <ul className="audit-reason-list">{reasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul>}
 
       {itemAudits && itemAudits.length > 0 && (
         <details className="audit-detail-disclosure">

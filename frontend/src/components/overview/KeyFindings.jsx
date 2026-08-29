@@ -1,4 +1,12 @@
-const DISPLAY_LIMIT = 5
+const DISPLAY_LIMIT = 3
+
+const TYPE_SYMBOLS = {
+  CHANGE: '↗',
+  TREND: '∿',
+  ANOMALY: '!',
+  CONTRIBUTION: '⑂',
+  CONTRAST: '⇄',
+}
 
 const primaryValueFor = (
   finding,
@@ -39,9 +47,11 @@ function KeyFindings({ insights, language, copy, compact = false }) {
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const persistedInsights = Array.isArray(insights) ? insights : []
   const rankedInsights = persistedInsights.filter(
-    (insight) => insight?.rank !== null && insight?.rank !== undefined,
+    (insight) => Number.isInteger(insight?.rank) && insight.rank > 0,
   )
-  const findings = (rankedInsights.length > 0 ? rankedInsights : persistedInsights)
+  const findings = (rankedInsights.length > 0
+    ? [...rankedInsights].sort((left, right) => left.rank - right.rank)
+    : persistedInsights)
     .slice(0, DISPLAY_LIMIT)
   const formatNumber = (value) => new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
@@ -90,6 +100,7 @@ function KeyFindings({ insights, language, copy, compact = false }) {
 
       <ol className="key-findings-list">
         {findings.map((finding, index) => {
+          const typeLabel = copy.types[finding.type] || finding.type || copy.notAvailable
           const priorityLabel = copy.priorities[finding.priorityLevel]
             || finding.priorityLevel
             || copy.notAvailable
@@ -129,22 +140,17 @@ function KeyFindings({ insights, language, copy, compact = false }) {
                   #{displayOrdinal}
                 </div>
                 <div className="finding-compact-identity">
-                  <h3>{finding.metric || copy.notAvailable}</h3>
+                  <h3><span className="top-signal-icon" aria-hidden="true">{TYPE_SYMBOLS[finding.type] || '•'}</span>{finding.metric || copy.notAvailable}</h3>
+                  <div className="top-signal-result">
+                    <strong className={directionValueClass} title={primaryValue ? `${primaryValue.label}: ${primaryValue.value}` : typeLabel}>
+                      {primaryValue?.value || typeLabel}
+                    </strong>
+                    <span className={`status ${priorityClass}`}>{priorityLabel}</span>
+                  </div>
                   {(period || context.length > 0 || direction) && (
                     <p className="finding-context">
                       {[period, ...context, direction].filter(Boolean).join(' · ')}
                     </p>
-                  )}
-                </div>
-                <div className="finding-compact-result">
-                  <span className={`status ${priorityClass}`}>{priorityLabel}</span>
-                  {primaryValue && (
-                    <strong
-                      className={directionValueClass}
-                      title={`${primaryValue.label}: ${primaryValue.value}`}
-                    >
-                      {primaryValue.value}
-                    </strong>
                   )}
                 </div>
               </li>

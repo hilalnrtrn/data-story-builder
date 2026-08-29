@@ -141,7 +141,7 @@ public sealed class StoryDataDiffGoldenTests
     }
 
     [Fact]
-    public void SemanticAdditionBoundaryIsExplicitWithoutClaimingVerification()
+    public void ClearUnsupportedSemanticAdditionFailsWithExplainableFinding()
     {
         var (_, grounded) = Golden();
         var revenueId = grounded.Findings.Single(item =>
@@ -151,9 +151,12 @@ public sealed class StoryDataDiffGoldenTests
 
         var result = StoryDataDiffEvaluator.Evaluate(story, grounded);
 
-        Assert.Equal(StoryDataDiffStatus.Pass, result.Status);
+        Assert.Equal(StoryDataDiffStatus.Fail, result.Status);
+        Assert.True(result.HasSemanticSafetyFailure);
+        Assert.Contains(result.ItemAudits.SelectMany(audit => audit.Reasons), reason =>
+            reason.Contains("unsupported business concept 'customer satisfaction'", StringComparison.Ordinal));
         Assert.Contains(
-            "Arbitrary nonnumerical semantic assertions are not verified by the current prose-only generated-story contract.",
+            "Semantic assertions beyond explicit direction contradictions and the bounded material business-concept vocabulary are not verified by the current prose-only generated-story contract.",
             result.AuditLimitations);
     }
 

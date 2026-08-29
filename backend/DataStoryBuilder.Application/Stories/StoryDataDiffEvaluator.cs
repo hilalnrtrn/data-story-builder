@@ -3,7 +3,7 @@ namespace DataStoryBuilder.Application.Stories;
 public static class StoryDataDiffEvaluator
 {
     private const string SemanticAuditLimitation =
-        "Arbitrary nonnumerical semantic assertions are not verified by the current prose-only generated-story contract.";
+        "Semantic assertions beyond explicit direction contradictions and the bounded material business-concept vocabulary are not verified by the current prose-only generated-story contract.";
 
     public static StoryDataDiffResult Evaluate(
         GeneratedExecutiveStory story,
@@ -60,6 +60,13 @@ public static class StoryDataDiffEvaluator
             if (isCovered && finding is not null && !trace!.HasResolvedEvidence)
             {
                 itemReasons.Add("The analytical finding has no resolved grounded evidence.");
+            }
+            if (source is not null && finding is not null)
+            {
+                itemReasons.AddRange(StorySemanticSafetyAuditor.Audit(
+                    new GeneratedStoryItem(source.SourceItemId, source.GeneratedText),
+                    finding,
+                    groundedInput));
             }
 
             audits.Add(new StoryItemAudit(
@@ -129,6 +136,12 @@ public static class StoryDataDiffEvaluator
         if (hasNumericalMismatch)
         {
             reasons.Add("Generated story contains unsupported numerical values.");
+        }
+        if (audits.Any(audit => audit.Reasons.Any(reason => reason.StartsWith(
+                StoryDataDiffResult.SemanticSafetyReasonPrefix,
+                StringComparison.Ordinal))))
+        {
+            reasons.Add("Generated story contains a material semantic safety violation.");
         }
 
         return new StoryDataDiffResult(

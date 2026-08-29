@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import StorySection from './StorySection.jsx'
+import '../../ExecutiveStory.css'
 
 const PLAN_COLLECTIONS = [
   'context',
@@ -29,7 +30,7 @@ function ExecutiveStory({ analysis, language, copy, onStartAnalysis, onOpenHisto
   const generationStatus = generation?.status || null
   const generationFailed = generationStatus === 'Failed'
   const sections = Array.isArray(story?.sections)
-    ? [...story.sections].sort((left, right) => left.order - right.order)
+    ? story.sections
     : []
   const planById = useMemo(() => indexStoryPlan(storyPlan), [storyPlan])
   const auditById = useMemo(() => new Map(
@@ -52,6 +53,7 @@ function ExecutiveStory({ analysis, language, copy, onStartAnalysis, onOpenHisto
   const generatedAt = formatDate(generation?.generatedAt)
   const generationLanguage = generation?.language || null
   const languageMismatch = generationLanguage && generationLanguage !== language
+  const auditStatus = analysis?.storyAudit?.status ?? null
 
   if (!analysis) {
     return (
@@ -91,15 +93,9 @@ function ExecutiveStory({ analysis, language, copy, onStartAnalysis, onOpenHisto
     <article className="executive-story" aria-labelledby="executive-story-title">
       <header className="executive-story-hero">
         <div className="executive-story-heading">
-          <p className="eyebrow">{copy.eyebrow}</p>
+          <div className="story-report-context"><span>{analysis.fileName || copy.unavailable}</span><span>{copy.generationStatuses[generationStatus] || generationStatus || copy.unavailable}</span>{auditStatus !== null && <span>{copy.auditStatus}: {copy.auditStatuses[auditStatus] || auditStatus}</span>}</div>
           <h2 id="executive-story-title">{story.title}</h2>
-          <p className="executive-story-file">{analysis.fileName || copy.unavailable}</p>
         </div>
-        <dl className="story-generation-metadata">
-          <div><dt>{copy.generationStatus}</dt><dd>{copy.generationStatuses[generationStatus] || generationStatus || copy.unavailable}</dd></div>
-          {generatedAt && <div><dt>{copy.generatedAt}</dt><dd>{generatedAt}</dd></div>}
-          {generation?.modelIdentifier && <div><dt>{copy.provider}</dt><dd>{generation.modelIdentifier}</dd></div>}
-        </dl>
       </header>
 
       <section className="executive-summary" aria-labelledby="executive-summary-title">
@@ -132,6 +128,21 @@ function ExecutiveStory({ analysis, language, copy, onStartAnalysis, onOpenHisto
           />
         ))}
       </div>
+
+      <footer className="story-report-footer">
+        <details className="story-report-details">
+          <summary>{copy.reportDetails}</summary>
+          <dl className="story-generation-metadata">
+            <div><dt>{copy.generationStatus}</dt><dd>{copy.generationStatuses[generationStatus] || generationStatus || copy.unavailable}</dd></div>
+            {generatedAt && <div><dt>{copy.generatedAt}</dt><dd>{generatedAt}</dd></div>}
+            {generationLanguage && <div><dt>{copy.reportLanguage}</dt><dd>{copy.languageNames[generationLanguage] || generationLanguage}</dd></div>}
+            {generation?.modelIdentifier && <div><dt>{copy.provider}</dt><dd>{generation.modelIdentifier}</dd></div>}
+            {generation?.promptVersion && <div><dt>{copy.promptVersion}</dt><dd>{generation.promptVersion}</dd></div>}
+            {auditStatus !== null && <div><dt>{copy.auditStatus}</dt><dd>{copy.auditStatuses[auditStatus] || auditStatus}</dd></div>}
+            <div><dt>{copy.sectionCount}</dt><dd>{sections.length}</dd></div>
+          </dl>
+        </details>
+      </footer>
     </article>
   )
 }

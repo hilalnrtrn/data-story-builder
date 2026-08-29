@@ -45,7 +45,7 @@ function RevenueByRegionChart({ chart, language, copy, theme }) {
       x: {
         grid: { display: false },
         border: { display: false },
-        ticks: { color: textColor, autoSkip: false, maxRotation: 45, minRotation: 0, font: { size: 11 } },
+        ticks: { color: textColor, autoSkip: false, maxRotation: 45, minRotation: 0, font: { size: 12 } },
       },
       y: {
         beginAtZero: true,
@@ -53,7 +53,7 @@ function RevenueByRegionChart({ chart, language, copy, theme }) {
         grid: { color: gridColor },
         ticks: {
           color: textColor,
-          font: { size: 11 },
+          font: { size: 12 },
           callback: (value) => numberFormatter.format(value),
         },
       },
@@ -84,15 +84,13 @@ function RevenueByRegionChart({ chart, language, copy, theme }) {
 
   return (
     <ChartCard
-      eyebrow={copy.eyebrow}
       title={copy.title}
-      description={copy.description}
       footer={periodContext}
       isEmpty={!isReady}
       emptyTitle={copy.emptyTitle}
       emptyDescription={emptyDescription}
     >
-      <p className="chart-text-summary">
+      <p className="chart-text-summary visually-hidden-chart-summary">
         {copy.summary.replace('{count}', numberFormatter.format(points.length))}
       </p>
       <div className="chart-canvas-container">

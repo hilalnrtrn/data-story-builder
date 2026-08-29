@@ -1,0 +1,191 @@
+/* FD-L: final cross-screen responsive and theme certification corrections. */
+
+.workspace-content,
+.workspace-content > *,
+.analysis-overview,
+.insight-explorer,
+.executive-story,
+.story-audit-workspace,
+.hypothesis-explorer,
+.history-panel,
+.upload-card,
+.state-panel,
+.chart-card,
+.chart-card-content,
+.chart-canvas-container {
+  min-width: 0;
+}
+
+:where(
+  .workspace-content,
+  .insight-detail-drawer,
+  .executive-story,
+  .story-audit-workspace,
+  .hypothesis-explorer,
+  .history-panel,
+  .upload-card,
+  .state-panel
+) :where(code, dd) {
+  overflow-wrap: anywhere;
+}
+
+.chart-card canvas {
+  max-width: 100% !important;
+}
+
+.audit-mismatch-list article,
+.bias-finding-list article,
+.hypothesis-record-list article,
+.hypothesis-evidence-list li,
+.history-item article,
+.selected-file-card,
+.state-panel-content {
+  min-width: 0;
+}
+
+.audit-mismatch-list article > header,
+.bias-finding-list article > header,
+.hypothesis-record-list article > header,
+.hypothesis-detail-heading,
+.story-item-heading {
+  flex-wrap: wrap;
+}
+
+[data-theme='light'] .hypothesis-status.status-open { color: #8a5b00; background: #fff4ce; }
+[data-theme='light'] .hypothesis-status.status-supported { color: #175cd3; background: #eff8ff; }
+[data-theme='light'] .hypothesis-status.status-confirmed { color: #067647; background: #ecfdf3; }
+[data-theme='light'] .hypothesis-status.status-rejected { color: #b42318; background: #fef3f2; }
+
+@media (min-width: 1200px) {
+  .analysis-overview,
+  .insight-explorer,
+  .story-audit-workspace,
+  .hypothesis-explorer,
+  .history-panel { width: min(100%, 92rem); margin-inline: auto; }
+}
+
+@media (max-width: 1024px) {
+  .chart-card-content,
+  .chart-canvas-container { min-height: 16rem; }
+  .audit-pillar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .workspace-controls,
+  .insight-toolbar-actions,
+  .hypothesis-lifecycle-actions > div,
+  .analysis-error-actions {
+    flex-wrap: wrap;
+  }
+
+  .insight-detail-drawer {
+    max-width: 100%;
+    max-height: 100dvh;
+  }
+
+  .chart-card-content,
+  .chart-canvas-container { min-height: 15rem; }
+
+  .story-trace-metadata,
+  .audit-technical-details dl,
+  .hypothesis-detail-hero dl { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .workspace-header { gap: .6rem; }
+  .workspace-heading-copy,
+  .workspace-controls { min-width: 0; }
+  .workspace-controls > * { min-height: 2.75rem; }
+
+  .chart-card,
+  .audit-decision-hero,
+  .fd-e2-section,
+  .fd-e3-section,
+  .fd-e4-section,
+  .hypothesis-detail-hero,
+  .hypothesis-detail-section,
+  .hypothesis-lifecycle,
+  .hypothesis-causality-boundary,
+  .state-panel.state-panel { max-width: 100%; }
+
+  .audit-mismatch-list article > header,
+  .bias-finding-list article > header,
+  .hypothesis-record-list article > header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .35rem;
+  }
+
+  .chart-card-content,
+  .chart-canvas-container { min-height: 14rem; }
+}
+
+@media (max-width: 390px) {
+  .workspace-content { padding-inline: .875rem; }
+
+  .workspace-analysis-context,
+  .workspace-description,
+  .history-identity p,
+  .story-report-context { font-size: .75rem; }
+
+  .workspace-controls {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .language-switcher,
+  .header-new-analysis { min-width: 0; }
+
+  .insight-filter-button,
+  .insight-scan-filter,
+  .insight-reset-button,
+  .history-open-button,
+  .history-technical > summary,
+  .hypothesis-open-button,
+  .hypothesis-lifecycle-actions button,
+  .remove-file-button,
+  .browse-button,
+  .upload-button,
+  .analysis-error-actions button,
+  details > summary {
+    min-height: 2.75rem;
+  }
+
+  .hypothesis-lifecycle-actions > div,
+  .hypothesis-lifecycle-actions button,
+  .analysis-error-actions,
+  .analysis-error-actions button { width: 100%; }
+
+  .history-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .history-open-button { justify-content: center; width: 100%; }
+  .history-technical > summary { display: flex; align-items: center; }
+
+  .chart-card-content,
+  .chart-canvas-container,
+  .chart-empty-state,
+  .chart-loading-state { min-height: 13rem; }
+
+  .fd-e-primary-signal > div,
+  .insight-card-primary-signal > div { align-items: flex-start; flex-wrap: wrap; }
+
+  .story-role-badge,
+  .story-qualification-badge,
+  .hypothesis-status,
+  .audit-badge,
+  .status { white-space: normal; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .executive-story,
+  .story-audit-workspace,
+  .fd-e-hero,
+  .insight-detail-drawer { animation: none !important; }
+
+  :where(button, a, summary, [role='button'], .navigation-item, .history-item article) {
+    transition: none !important;
+  }
+}
